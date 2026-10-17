@@ -36,7 +36,7 @@ export const Inside = forwardRef<HTMLDivElement, Props>(function Inside({ active
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_top,rgb(110_158_173/0.08),transparent_60%)]" />
 
       {/* barra superior */}
-      <header data-boot className="sticky top-0 z-10 border-b border-obs-line bg-obs-0/90 backdrop-blur">
+      <header data-boot inert={selected !== null || undefined} className="sticky top-0 z-10 border-b border-obs-line bg-obs-0/90 backdrop-blur">
         <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 text-[11px] sm:px-6">
           <span className="flex items-center gap-2 text-obs-text">
             <span className="missing-texture inline-block size-2.5" aria-hidden />
@@ -69,7 +69,7 @@ export const Inside = forwardRef<HTMLDivElement, Props>(function Inside({ active
         </div>
       </header>
 
-      <main className="relative mx-auto grid max-w-[1400px] grid-cols-1 gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <main inert={selected !== null || undefined} className="relative mx-auto grid max-w-[1400px] grid-cols-1 gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="grid min-w-0 grid-cols-1 gap-4">
           <Panel title={lang === "pt" ? "topologia · serviços" : "topology · services"} meta={lang === "pt" ? "clique num serviço" : "click a service"}>
             <ServiceMap active={active} onSelect={open} />
@@ -152,8 +152,10 @@ function EnvBlock() {
     ["LOCATION", "Fortaleza, CE — Brasil"],
     ["EDUCATION", pt ? "Ciência da Computação @ UNIFOR · 5º sem · formatura 2028-06" : "Computer Science @ UNIFOR · 5th sem · graduating 2028-06"],
     ["SEEKING", pt ? "estágio | júnior" : "internship | junior", "ok"],
+    ["AVAILABILITY", pt ? "full-time | part-time · presencial | híbrido | remoto" : "full-time | part-time · on-site | hybrid | remote"],
     ["STACK", "java,spring-boot,typescript,nestjs,postgresql"],
     ["EXPERIENCE_0", `${t.experience.company} · 2024-02..2024-08`],
+    ["LANG", pt ? "pt-BR (nativo), en (A2), es (básico)" : "pt-BR (native), en (A2), es (basic)"],
     ["ORIGIN", pt ? "caçar o que o mapa não devia mostrar" : "finding what the map wasn't meant to show", "rust"],
   ];
 

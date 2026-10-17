@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     method: request.method,
     path: url.pathname,
     region: h.get("x-vercel-ip-country"),
-    city: city ? decodeURIComponent(city) : null,
+    city: city ? safeDecode(city) : null,
     requestId: h.get("x-vercel-id"),
     userAgent: summarizeUserAgent(h.get("user-agent") ?? ""),
     serverTime: new Date().toISOString(),
@@ -35,4 +35,12 @@ function summarizeUserAgent(ua: string) {
     /Windows/.test(ua) ? "Windows" :
     /Linux/.test(ua) ? "Linux" : "unknown";
   return `${browser} · ${os}`;
+}
+
+function safeDecode(value: string) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }

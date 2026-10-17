@@ -24,7 +24,8 @@ const listeners = new Set<() => void>();
 export function logEvent(entry: Omit<LogEntry, "id" | "t"> & { t?: number }) {
   if (typeof window === "undefined") return;
   const next: LogEntry = { id: ++seq, t: entry.t ?? performance.now(), ...entry };
-  entries = [...entries, next].slice(-MAX);
+  // mantém a ordem cronológica: eventos medidos (paint, navegação) chegam depois de acontecer
+  entries = [...entries, next].sort((a, b) => a.t - b.t).slice(-MAX);
   listeners.forEach((l) => l());
 }
 

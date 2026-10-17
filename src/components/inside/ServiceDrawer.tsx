@@ -105,7 +105,7 @@ export function ServiceDrawer({ id, onClose }: { id: ProjectId | null; onClose: 
             {study ? study.role[lang] : text.kind}
           </p>
           <h2 id="drawer-title" tabIndex={-1} data-stagger className="mt-3 font-display text-5xl leading-none tracking-tight text-obs-text outline-none sm:text-6xl">
-            {project.name}
+            {project.name[lang]}
           </h2>
           <p data-stagger className="mt-5 max-w-xl font-sans text-lg leading-relaxed text-obs-text/85">
             {text.summary}

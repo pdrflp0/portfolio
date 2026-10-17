@@ -1,16 +1,20 @@
 "use client";
 
-import { forwardRef, useEffect, useRef } from "react";
-import { LINKS, PROJECTS, SKILLS, SKILL_EN } from "@/content/site";
+import { forwardRef, useEffect, useRef, useState } from "react";
+import { LINKS, PROJECTS, SKILLS } from "@/content/site";
 import { useLang } from "@/lib/i18n";
 import { logEvent } from "@/lib/visit-log";
 import { LangToggle } from "@/components/LangToggle";
 import { GlitchDot } from "./GlitchDot";
+import { HeroScene } from "./HeroScene";
+import { MapDoor } from "./MapDoor";
+import { EdgeOfMap } from "./EdgeOfMap";
 
 export type NoclipOrigin = { x: number; y: number };
+export type NoclipHandler = (origin?: NoclipOrigin, via?: string) => void;
 
 type Props = {
-  onNoclip: (origin?: NoclipOrigin) => void;
+  onNoclip: NoclipHandler;
   hidden: boolean;
 };
 
@@ -18,10 +22,12 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
   const { t, lang } = useLang();
   const rootRef = useRef<HTMLDivElement | null>(null);
 
-  // Revela seções ao rolar e registra no log da visita quais foram vistas
+  // Revela seções ao rolar e registra no log da visita quais foram vistas.
+  // Sem JS (ou antes dele), tudo fica visível: o estado escondido só vale com data-reveal.
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
+    document.documentElement.dataset.reveal = "on";
     const seen = new Set<string>();
     const io = new IntersectionObserver(
       (items) => {
@@ -63,12 +69,12 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
         {lang === "pt" ? "Pular para os projetos" : "Skip to projects"}
       </a>
 
-      <header className="sticky top-0 z-30 border-b border-transparent bg-paper/85 backdrop-blur-md supports-[backdrop-filter]:bg-paper/70">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-6 px-5 sm:px-8">
-          <a href="#top" className="font-display text-[1.35rem] leading-none tracking-tight">
+      <header className="sticky top-0 z-30 bg-paper/85 backdrop-blur-md supports-[backdrop-filter]:bg-paper/70">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-8">
+          <a href="#top" className="shrink-0 font-display text-[1.35rem] leading-none tracking-tight">
             Pedro Felipe
           </a>
-          <nav aria-label={lang === "pt" ? "Principal" : "Main"} className="flex items-center gap-3 text-sm sm:gap-5">
+          <nav aria-label={lang === "pt" ? "Principal" : "Main"} className="flex items-center gap-2.5 text-sm sm:gap-5">
             <ul className="hidden items-center gap-6 text-ink-2 md:flex">
               <li><a className="link-underline" href="#work">{t.nav.work}</a></li>
               <li><a className="link-underline" href="#about">{t.nav.about}</a></li>
@@ -78,10 +84,10 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
             <LangToggle tone="paper" />
             <button
               type="button"
-              onClick={() => onNoclip()}
-              className="group inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-line px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-2 transition-colors hover:border-ink hover:text-ink"
+              onClick={() => onNoclip(undefined, "button")}
+              className="group inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-line px-2.5 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.1em] text-ink-2 transition-colors hover:border-ink hover:text-ink sm:px-3 sm:text-[11px]"
             >
-              <span className="relative inline-block size-2 overflow-hidden">
+              <span className="relative inline-block size-2 overflow-hidden" aria-hidden>
                 <span className="absolute inset-0 bg-ink/70 transition-opacity group-hover:opacity-0" />
                 <span className="missing-texture absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100" />
               </span>
@@ -93,60 +99,67 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
 
       <main id="top">
         {/* HERO */}
-        <section className="mx-auto max-w-6xl px-5 pb-24 pt-16 sm:px-8 sm:pt-24 lg:pb-32">
-          <p className="hero-in flex items-center gap-2.5 font-mono text-xs uppercase tracking-[0.14em] text-ink-2" style={{ ["--d" as string]: "0ms" }}>
-            <span className="relative flex size-2">
-              <span className="pulse-dot absolute inset-0 rounded-full bg-ok" />
-            </span>
-            {t.hero.status}
-          </p>
-
-          <h1 className="mt-8 font-display text-[clamp(3.6rem,13vw,10.5rem)] leading-[0.86] tracking-[-0.035em]">
-            <span className="hero-in block" style={{ ["--d" as string]: "80ms" }}>Pedro</span>
-            <span className="hero-in block" style={{ ["--d" as string]: "160ms" }}>
-              Felipe
-              <GlitchDot label={t.noclip.hint} onActivate={onNoclip} />
-            </span>
-          </h1>
-
-          <div className="mt-12 grid gap-10 md:grid-cols-[1.4fr_1fr] md:items-end">
-            <div className="hero-in" style={{ ["--d" as string]: "260ms" }}>
-              <p className="font-mono text-sm text-rust">{t.hero.role}</p>
-              <p className="mt-4 max-w-xl text-xl leading-snug text-ink sm:text-[1.6rem] sm:leading-[1.3]">
-                {t.hero.lead}
+        <section className="mx-auto max-w-6xl px-5 pt-10 sm:px-8 sm:pt-14 lg:pt-16">
+          <div className="grid items-center gap-x-10 gap-y-12 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,1fr)]">
+            <div>
+              <p className="hero-in flex items-center gap-2.5 font-mono text-xs uppercase tracking-[0.14em] text-ink-2" style={{ ["--d" as string]: "0ms" }}>
+                <span className="relative flex size-2 shrink-0">
+                  <span className="pulse-dot absolute inset-0 rounded-full bg-ok" />
+                </span>
+                {t.hero.status}
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <a
-                  href="#work"
-                  className="inline-flex items-center gap-2 rounded-full bg-ink px-5 py-3 text-sm text-paper transition-transform duration-300 [transition-timing-function:var(--ease-out)] hover:-translate-y-0.5"
-                >
-                  {t.hero.ctaWork}
-                  <span aria-hidden>↓</span>
-                </a>
-                <a
-                  href="#contact"
-                  className="inline-flex items-center gap-2 rounded-full border border-ink/25 px-5 py-3 text-sm transition-colors hover:border-ink"
-                >
-                  {t.hero.ctaContact}
-                </a>
+
+              <h1
+                aria-label="Pedro Felipe"
+                className="mt-7 font-display text-[clamp(3.8rem,15vw,9.6rem)] leading-[0.86] tracking-[-0.035em] lg:text-[clamp(5rem,9.6vw,9.6rem)]"
+              >
+                <span className="hero-in block" style={{ ["--d" as string]: "80ms" }}>Pedro</span>
+                <span className="hero-in block whitespace-nowrap" style={{ ["--d" as string]: "160ms" }}>
+                  Felipe
+                  <GlitchDot label={t.noclip.hint} onActivate={(o) => onNoclip(o, "glitch")} />
+                </span>
+              </h1>
+
+              <div className="hero-in mt-9" style={{ ["--d" as string]: "260ms" }}>
+                <p className="font-mono text-[13px] text-rust">{t.hero.role}</p>
+                <p className="mt-4 max-w-xl text-xl leading-snug text-ink sm:text-[1.5rem] sm:leading-[1.32]">
+                  {t.hero.lead}
+                </p>
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <a
+                    href="#work"
+                    className="inline-flex items-center gap-2 rounded-full bg-ink px-5 py-3 text-sm text-paper transition-transform duration-300 [transition-timing-function:var(--ease-out)] hover:-translate-y-0.5"
+                  >
+                    {t.hero.ctaWork}
+                    <span aria-hidden>↓</span>
+                  </a>
+                  <a
+                    href="#contact"
+                    className="inline-flex items-center gap-2 rounded-full border border-ink/25 px-5 py-3 text-sm transition-colors hover:border-ink"
+                  >
+                    {t.hero.ctaContact}
+                  </a>
+                </div>
               </div>
             </div>
 
-            <dl className="hero-in grid grid-cols-[auto_1fr] gap-x-6 gap-y-2.5 border-t border-line pt-5 font-mono text-[13px] text-ink-2 md:justify-self-end" style={{ ["--d" as string]: "340ms" }}>
-              <dt className="text-ink-3">{lang === "pt" ? "base" : "based"}</dt>
-              <dd>Fortaleza, CE</dd>
-              <dt className="text-ink-3">{lang === "pt" ? "estudo" : "study"}</dt>
-              <dd>{lang === "pt" ? "Ciência da Computação · UNIFOR" : "Computer Science · UNIFOR"}</dd>
-              <dt className="text-ink-3">stack</dt>
-              <dd>Java · Spring · TypeScript · NestJS</dd>
-              <dt className="text-ink-3">{lang === "pt" ? "dados" : "data"}</dt>
-              <dd>PostgreSQL</dd>
-            </dl>
+            <div className="hero-in mx-auto w-full max-w-[540px] lg:mx-0 lg:justify-self-end" style={{ ["--d" as string]: "380ms" }}>
+              <HeroScene paused={hidden} onNoclip={(o) => onNoclip(o, "scene")} />
+            </div>
           </div>
+
+          <dl className="hero-meta hero-in mt-14 grid grid-cols-2 border-y border-line lg:mt-16 lg:grid-cols-4" style={{ ["--d" as string]: "480ms" }}>
+            {t.hero.meta.map((m) => (
+              <div key={m.label} className="py-4 font-mono text-[12.5px] sm:py-5">
+                <dt className="text-ink-3">{m.label}</dt>
+                <dd className="mt-1 text-ink">{m.value}</dd>
+              </div>
+            ))}
+          </dl>
         </section>
 
         {/* PROJETOS */}
-        <section id="work" data-reveal className="reveal border-t border-line">
+        <section id="work" data-reveal className="reveal scroll-mt-16">
           <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
             <SectionLabel index="01" title={t.work.title} />
 
@@ -158,7 +171,7 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
                     <span className="font-mono text-xs text-ink-3">{String(i + 1).padStart(2, "0")}</span>
                     <div>
                       <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-rust">{text.kind}</p>
-                      <h3 className="mt-3 font-display text-4xl leading-[1.02] tracking-tight sm:text-5xl">{p.name}</h3>
+                      <h3 className="mt-3 font-display text-4xl leading-[1.02] tracking-tight sm:text-5xl">{p.name[lang]}</h3>
                       <p className="mt-4 max-w-md text-[1.05rem] leading-relaxed text-ink-2">{text.summary}</p>
                       <a
                         href={p.repo}
@@ -202,7 +215,7 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
                     className="flex h-full flex-col p-5 transition-colors hover:bg-paper-2"
                   >
                     <span className="flex items-baseline justify-between gap-3">
-                      <span className="font-medium">{p.name}</span>
+                      <span className="font-medium">{p.name[lang]}</span>
                       <span aria-hidden className="text-ink-3">↗</span>
                     </span>
                     <span className="mt-1 font-mono text-[11px] text-ink-3">{t.projects[p.id].kind}</span>
@@ -215,10 +228,15 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
         </section>
 
         {/* SOBRE */}
-        <section id="about" data-reveal className="reveal border-t border-line">
+        <section id="about" data-reveal className="reveal scroll-mt-16 border-t border-line">
           <div className="mx-auto grid max-w-6xl gap-10 px-5 py-20 sm:px-8 sm:py-28 md:grid-cols-[16rem_1fr]">
             <SectionLabel index="02" title={t.about.title} />
             <div className="max-w-2xl space-y-6 text-xl leading-[1.55] text-ink sm:text-[1.4rem]">
+              <p>
+                {t.about.lead[0]}
+                <MapDoor onActivate={(o) => onNoclip(o, "about")}>{t.about.lead[1]}</MapDoor>
+                {t.about.lead[2]}
+              </p>
               {t.about.body.map((para, i) => (
                 <p key={i} className={i > 0 ? "text-ink-2" : undefined}>{para}</p>
               ))}
@@ -226,8 +244,8 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
           </div>
         </section>
 
-        {/* EXPERIÊNCIA + FERRAMENTAS */}
-        <section id="experience" data-reveal className="reveal border-t border-line">
+        {/* EXPERIÊNCIA + FORMAÇÃO + FERRAMENTAS */}
+        <section id="experience" data-reveal className="reveal scroll-mt-16 border-t border-line">
           <div className="mx-auto grid max-w-6xl gap-10 px-5 py-20 sm:px-8 sm:py-28 md:grid-cols-[16rem_1fr]">
             <SectionLabel index="03" title={t.experience.title} />
             <div>
@@ -251,14 +269,25 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
                 </ul>
               </article>
 
+              <h3 className="mt-16 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">{t.education.title}</h3>
+              <article className="mt-5 grid gap-2 border-t border-line pt-5 sm:grid-cols-[1fr_auto]">
+                <div>
+                  <p className="text-lg text-ink">{t.education.school}</p>
+                  <p className="text-ink-2">{t.education.degree}</p>
+                </div>
+                <p className="font-mono text-[13px] text-ink-3 sm:text-right">
+                  {t.education.period}
+                  <br />
+                  {t.education.detail}
+                </p>
+              </article>
+
               <h3 className="mt-16 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">{t.skills.title}</h3>
               <dl className="mt-5 divide-y divide-line border-y border-line">
                 {SKILLS.map((g) => (
-                  <div key={g.group.en} className="grid gap-2 py-3.5 sm:grid-cols-[9rem_1fr]">
+                  <div key={g.group.en} className="grid gap-2 py-3.5 sm:grid-cols-[11rem_1fr]">
                     <dt className="font-mono text-[13px] text-ink-3">{g.group[lang]}</dt>
-                    <dd className="text-[0.95rem] text-ink">
-                      {g.items.map((s) => (lang === "en" ? SKILL_EN[s] ?? s : s)).join(" · ")}
-                    </dd>
+                    <dd className="text-[0.95rem] text-ink">{g.items[lang].join(" · ")}</dd>
                   </div>
                 ))}
               </dl>
@@ -267,7 +296,7 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
         </section>
 
         {/* CONTATO */}
-        <section id="contact" data-reveal className="reveal border-t border-line bg-ink text-paper">
+        <section id="contact" data-reveal className="reveal scroll-mt-16 border-t border-line bg-ink text-paper">
           <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-paper/50">04 — {t.nav.contact}</p>
             <h2 className="mt-6 font-display text-[clamp(3rem,9vw,7rem)] leading-[0.92] tracking-[-0.03em]">
@@ -280,6 +309,7 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
             >
               {LINKS.email}
             </a>
+            <p className="mt-6 max-w-xl font-mono text-[12px] leading-relaxed text-paper/55">{t.contact.availability}</p>
 
             <div className="mt-14 flex flex-col gap-8 border-t border-paper/15 pt-8 sm:flex-row sm:items-center sm:justify-between">
               <ul className="flex flex-wrap gap-x-7 gap-y-3 text-sm">
@@ -289,10 +319,20 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
               </ul>
               <div className="flex items-center gap-3 text-sm">
                 <span className="text-paper/50">{t.contact.cv}</span>
-                <a href={LINKS.cv.pt} download className="rounded-full border border-paper/25 px-3.5 py-1.5 font-mono text-xs transition-colors hover:border-paper">
+                <a
+                  href={LINKS.cv.pt}
+                  download="Pedro-Felipe-CV-PT.pdf"
+                  onClick={() => logEvent({ kind: "event", label: "download cv-pt" })}
+                  className="rounded-full border border-paper/25 px-3.5 py-1.5 font-mono text-xs transition-colors hover:border-paper"
+                >
                   PDF · {t.contact.cvPt}
                 </a>
-                <a href={LINKS.cv.en} download className="rounded-full border border-paper/25 px-3.5 py-1.5 font-mono text-xs transition-colors hover:border-paper">
+                <a
+                  href={LINKS.cv.en}
+                  download="Pedro-Felipe-CV-EN.pdf"
+                  onClick={() => logEvent({ kind: "event", label: "download cv-en" })}
+                  className="rounded-full border border-paper/25 px-3.5 py-1.5 font-mono text-xs transition-colors hover:border-paper"
+                >
                   PDF · {t.contact.cvEn}
                 </a>
               </div>
@@ -304,12 +344,37 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
       <footer className="bg-ink text-paper/40">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 border-t border-paper/10 px-5 py-6 font-mono text-[11px] sm:px-8">
           <span>© Pedro Felipe de Oliveira · {t.footer}</span>
-          <span className="text-paper/25" title="~">sv_cheats 0</span>
+          <CheatsToggle onActivate={(o) => onNoclip(o, "sv_cheats")} />
         </div>
       </footer>
+
+      <EdgeOfMap enabled={!hidden} label={t.noclip.edge} more={t.noclip.edgeMore} onTrigger={(o) => onNoclip(o, "edge")} />
     </div>
   );
 });
+
+/** O "sv_cheats 0" do rodapé: ligar os cheats é outra porta. */
+function CheatsToggle({ onActivate }: { onActivate: (o: NoclipOrigin) => void }) {
+  const [on, setOn] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        if (on) return;
+        const r = e.currentTarget.getBoundingClientRect();
+        setOn(true);
+        logEvent({ kind: "event", label: "sv_cheats 1" });
+        setTimeout(() => {
+          onActivate({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+          setTimeout(() => setOn(false), 1500);
+        }, 650);
+      }}
+      className={`transition-colors ${on ? "text-[#ff4fd8]" : "text-paper/25 hover:text-paper/60"}`}
+    >
+      sv_cheats {on ? 1 : 0}
+    </button>
+  );
+}
 
 function SectionLabel({ index, title }: { index: string; title: string }) {
   return (

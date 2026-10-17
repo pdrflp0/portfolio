@@ -11,6 +11,8 @@ import { enterNoclip, exitNoclip, type NoclipLayers } from "./noclip/transition"
 
 type Mode = "surface" | "entering" | "inside" | "exiting";
 
+const KONAMI = ["arrowup", "arrowup", "arrowdown", "arrowdown", "arrowleft", "arrowright", "arrowleft", "arrowright", "b", "a"];
+
 export function Portfolio() {
   return (
     <LangProvider>
@@ -26,6 +28,7 @@ function Stage() {
   const modeRef = useRef<Mode>("surface");
   const scrollRef = useRef(0);
   const originRef = useRef<NoclipOrigin | undefined>(undefined);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
 
   const surfaceRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -50,6 +53,7 @@ function Stage() {
       const l = layers();
       if (!l || modeRef.current !== "surface") return;
       originRef.current = origin;
+      returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       go("entering");
       logEvent({ kind: "event", label: `noclip on`, detail: via });
       traceRequest("noclip").then((t) => t && setTrace(t));
@@ -70,7 +74,14 @@ function Stage() {
       go("exiting");
       logEvent({ kind: "event", label: `noclip off`, detail: via });
       const tl = exitNoclip(l, scrollRef.current, originRef.current);
-      tl.eventCallback("onComplete", () => go("surface"));
+      tl.eventCallback("onComplete", () => {
+        go("surface");
+        // devolve o foco para quem abriu (o ponto, o botão, a cena…)
+        const back = returnFocusRef.current;
+        requestAnimationFrame(() => {
+          if (back?.isConnected && back !== document.body) back.focus({ preventScroll: true });
+        });
+      });
     },
     [go],
   );
@@ -89,15 +100,30 @@ function Stage() {
     bootstrapVisitLog();
   }, []);
 
-  // atalhos: ~ ou ` alterna, digitar "noclip" alterna, Esc volta
+  // atalhos: a tecla do console (~), digitar "noclip", Konami code e Esc para voltar
   useEffect(() => {
     let buffer = "";
+    let konami = 0;
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const target = e.target as HTMLElement | null;
       if (target?.closest("input, textarea, [contenteditable=true]")) return;
 
-      if (e.key === "~" || e.key === "`" || e.code === "Backquote") {
+      const key = e.key.toLowerCase();
+      konami = key === KONAMI[konami] ? konami + 1 : key === KONAMI[0] ? 1 : 0;
+      if (konami === KONAMI.length) {
+        konami = 0;
+        toggle("konami");
+        return;
+      }
+
+      // como nos jogos: a tecla abaixo do Esc, em qualquer layout (no ABNT2 o ~ é tecla morta)
+      const tilde =
+        e.key === "~" ||
+        e.key === "`" ||
+        e.code === "Backquote" ||
+        (e.key === "Dead" && e.code === "Quote" && e.shiftKey === false);
+      if (tilde) {
         e.preventDefault();
         toggle("key ~");
         return;
@@ -132,7 +158,7 @@ function Stage() {
         configurable: true,
         get() {
           toggle("console");
-          return modeRef.current === "surface" ? "noclip OFF" : "noclip ON";
+          return modeRef.current === "entering" || modeRef.current === "inside" ? "noclip ON" : "noclip OFF";
         },
       });
     } catch {}
@@ -145,7 +171,7 @@ function Stage() {
 
   return (
     <>
-      <Surface ref={surfaceRef} onNoclip={(o) => enter(o, o ? "glitch" : "button")} hidden={mode !== "surface"} />
+      <Surface ref={surfaceRef} onNoclip={enter} hidden={mode !== "surface"} />
       <div ref={voidRef} className="fixed inset-0 z-40 overflow-hidden bg-obs-0" aria-hidden>
         <VoidLayer />
       </div>

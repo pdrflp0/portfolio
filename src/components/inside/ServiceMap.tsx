@@ -102,7 +102,7 @@ export function ServiceMap({ active, onSelect }: { active: boolean; onSelect: (i
     };
   }, [active]);
 
-  const label = (id: ProjectId) => PROJECTS.find((p) => p.id === id)!;
+  const projectOf = (id: ProjectId) => PROJECTS.find((p) => p.id === id)!;
 
   return (
     <>
@@ -142,7 +142,7 @@ export function ServiceMap({ active, onSelect }: { active: boolean; onSelect: (i
 
         {SERVICES.map((s) => {
           const p = POS[s.id];
-          const proj = label(s.id);
+          const proj = projectOf(s.id);
           return (
             <button
               key={s.id}
@@ -151,6 +151,7 @@ export function ServiceMap({ active, onSelect }: { active: boolean; onSelect: (i
                 nodeRefs.current[s.id] = el;
               }}
               onClick={() => onSelect(s.id)}
+              aria-label={`${proj.name[lang]} — ${s.status}`}
               className="service-node group absolute flex -translate-x-1/2 -translate-y-1/2 flex-col border bg-obs-2 p-[1.1%] text-left transition-colors hover:border-obs-teal focus-visible:border-obs-teal"
               style={{
                 left: `${(p.x / W) * 100}%`,
@@ -163,9 +164,9 @@ export function ServiceMap({ active, onSelect }: { active: boolean; onSelect: (i
                 <span className={`size-1.5 shrink-0 ${s.status === "healthy" ? "rounded-full" : ""} ${STATUS_COLOR[s.status]}`} aria-hidden />
               </span>
               <span className="mt-0.5 truncate text-[10px] text-obs-dim">{proj.stack.slice(0, 3).join(" · ")}</span>
-              <span className="mt-2 flex gap-3 text-[10px]">
+              <span className="mt-2 flex min-w-0 flex-wrap gap-x-3 text-[10px] leading-[1.5]">
                 {s.metrics.slice(0, 2).map((m) => (
-                  <span key={m.label.en} className="text-obs-dim">
+                  <span key={m.label.en} className="whitespace-nowrap text-obs-dim">
                     <span className="text-obs-text">{m.value}</span> {m.label[lang]}
                   </span>
                 ))}
@@ -190,7 +191,7 @@ export function ServiceMap({ active, onSelect }: { active: boolean; onSelect: (i
       <ul className="divide-y divide-obs-line sm:hidden">
         {SERVICES.map((s) => (
           <li key={s.id}>
-            <button type="button" onClick={() => onSelect(s.id)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
+            <button type="button" onClick={() => onSelect(s.id)} aria-label={`${projectOf(s.id).name[lang]} — ${s.status}`} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
               <span className={`size-1.5 shrink-0 ${s.status === "healthy" ? "rounded-full" : ""} ${STATUS_COLOR[s.status]}`} aria-hidden />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[13px]">{s.svc}</span>

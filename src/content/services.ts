@@ -20,7 +20,7 @@ export const SERVICES: ServiceMeta[] = [
     metrics: [
       { label: { pt: "cenários", en: "scenarios" }, value: "4" },
       { label: { pt: "modos", en: "modes" }, value: "2" },
-      { label: { pt: "ordens exploradas", en: "explored orders" }, value: "≤360" },
+      { label: { pt: "ordens de entrega", en: "delivery orders" }, value: "≤360" },
     ],
     events: ["create g1", "hold update", "delete", "confirm delete", "release update", "read item-17", "409 REJECTED_DELETED"],
   },
@@ -30,8 +30,8 @@ export const SERVICES: ServiceMeta[] = [
     status: "healthy",
     metrics: [
       { label: { pt: "testes", en: "tests" }, value: "297" },
-      { label: { pt: "constraints verificadas", en: "constraints verified" }, value: "14" },
       { label: { pt: "filas FIFO", en: "FIFO queues" }, value: "3" },
+      { label: { pt: "violações barradas no banco", en: "violations blocked by the DB" }, value: "14" },
     ],
     events: ["BET 80.00", "Idempotency-Key", "inbox.dedupe", "FOR UPDATE", "ledger.append", "outbox.publish", "422 INSUFFICIENT_FUNDS"],
   },

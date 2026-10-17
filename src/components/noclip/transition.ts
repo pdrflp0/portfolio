@@ -216,7 +216,6 @@ export function enterNoclip(layers: NoclipLayers, origin?: Origin) {
       gsap.set(host, { autoAlpha: 0 });
     });
 
-  if (process.env.NODE_ENV !== "production") (window as unknown as { __noclip: unknown }).__noclip = tl;
   return { tl, scrollY };
 }
 
@@ -308,6 +307,5 @@ export function exitNoclip(layers: NoclipLayers, scrollY: number, origin?: Origi
       gsap.set(inside, { autoAlpha: 0 });
     });
 
-  if (process.env.NODE_ENV !== "production") (window as unknown as { __noclip: unknown }).__noclip = tl;
   return tl;
 }
