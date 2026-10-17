@@ -290,6 +290,13 @@ export const DIARY = {
     next: "Próximo post-mortem",
     all: "Todos os posts",
     back: "Voltar ao portfólio",
+    cta: {
+      kicker: "fim do post-mortem",
+      title: "Esse é o tipo de problema que eu gosto de resolver.",
+      lead: "Estou buscando estágio ou vaga júnior em back-end. Se o seu time cuida de sistemas onde isso importa, vamos conversar.",
+      email: "Mandar e-mail",
+      cv: "Currículo (PDF)",
+    },
   },
   en: {
     title: "Bug journal",
@@ -300,6 +307,13 @@ export const DIARY = {
     next: "Next post-mortem",
     all: "All posts",
     back: "Back to the portfolio",
+    cta: {
+      kicker: "end of post-mortem",
+      title: "This is the kind of problem I like to solve.",
+      lead: "I'm looking for a back-end internship or junior role. If your team runs systems where this matters, let's talk.",
+      email: "Send an email",
+      cv: "Résumé (PDF)",
+    },
   },
 } as const;
 

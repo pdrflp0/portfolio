@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DIARY, POSTS, readingMinutes, type Block, type Post } from "@/content/bugs";
-import { PROJECTS, isLang, type Lang } from "@/content/site";
+import { LINKS, PROJECTS, isLang, type Lang } from "@/content/site";
 import { DiaryFooter, DiaryHeader } from "@/components/diary/DiaryChrome";
 import { SequenceDiagram } from "@/components/diary/SequenceDiagram";
 import { RichText } from "@/components/diary/RichText";
@@ -98,6 +98,33 @@ export default async function PostPage({ params }: PageProps<"/[lang]/bugs/[slug
               </Link>
             )}
           </aside>
+
+          {/* quem leu até aqui é quem mais interessa: o contato fica a um clique */}
+          <section aria-labelledby="post-cta" className="mt-6 rounded-lg bg-ink p-6 text-paper sm:p-8">
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-paper/50">{d.cta.kicker}</p>
+            <h2 id="post-cta" className="mt-3 font-display text-[2rem] leading-[1.05] tracking-tight sm:text-[2.4rem]">
+              {d.cta.title}
+            </h2>
+            <p className="mt-3 max-w-lg text-paper/70">{d.cta.lead}</p>
+            <ul className="mt-6 flex flex-wrap items-center gap-3 text-sm">
+              <li>
+                <a href={`mailto:${LINKS.email}`} className="inline-flex rounded-full bg-paper px-4 py-2 text-ink transition-transform duration-300 hover:-translate-y-0.5">
+                  {d.cta.email}
+                </a>
+              </li>
+              <li>
+                <a href={LINKS.linkedin} target="_blank" rel="noreferrer" className="inline-flex rounded-full border border-paper/25 px-4 py-2 transition-colors hover:border-paper">
+                  LinkedIn ↗
+                </a>
+              </li>
+              <li>
+                <a href={LINKS.cv[lang]} download={`Pedro-Felipe-CV-${lang.toUpperCase()}.pdf`} className="inline-flex rounded-full border border-paper/25 px-4 py-2 transition-colors hover:border-paper">
+                  {d.cta.cv}
+                </a>
+              </li>
+            </ul>
+            <p className="mt-5 break-all font-mono text-[12px] text-paper/50">{LINKS.email}</p>
+          </section>
         </article>
       </main>
       <DiaryFooter lang={lang} />
