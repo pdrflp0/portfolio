@@ -16,7 +16,13 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/bugs">): P
       canonical: `/${lang}/bugs`,
       languages: { "pt-BR": "/pt/bugs", en: "/en/bugs", "x-default": "/pt/bugs" },
     },
-    openGraph: { type: "website", title: `${d.title} — Pedro Felipe`, description: d.lead, url: `/${lang}/bugs` },
+    openGraph: {
+      type: "website",
+      title: `${d.title} — Pedro Felipe`,
+      description: d.lead,
+      url: `/${lang}/bugs`,
+      images: [{ url: `/${lang}/opengraph-image`, width: 1200, height: 630, alt: d.title }],
+    },
   };
 }
 

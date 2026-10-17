@@ -50,6 +50,8 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/[[...servi
       description,
       siteName: "Pedro Felipe",
       url: `/${lang}${suffix}`,
+      // o openGraph da página substitui o herdado do layout: a imagem precisa vir junto
+      images: [{ url: `/${lang}/opengraph-image`, width: 1200, height: 630, alt: title }],
     },
   };
 }
