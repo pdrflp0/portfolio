@@ -19,10 +19,27 @@ const instrumentSerif = Instrument_Serif({
   style: ["normal", "italic"],
 });
 
+const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : "http://localhost:3000";
+
+const description =
+  "Portfólio de Pedro Felipe de Oliveira, desenvolvedor back-end (Java/Spring Boot, TypeScript/NestJS, PostgreSQL) em Fortaleza, CE. Buscando estágio ou vaga júnior.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "Pedro Felipe — Desenvolvedor back-end",
-  description:
-    "Portfólio de Pedro Felipe de Oliveira, desenvolvedor back-end (Java/Spring Boot, TypeScript/NestJS, PostgreSQL) em Fortaleza, CE.",
+  description,
+  authors: [{ name: "Pedro Felipe de Oliveira", url: "https://github.com/pdrflp0" }],
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    alternateLocale: "en_US",
+    title: "Pedro Felipe — Desenvolvedor back-end",
+    description,
+    siteName: "Pedro Felipe",
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {
