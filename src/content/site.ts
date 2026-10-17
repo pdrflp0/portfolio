@@ -346,10 +346,10 @@ export const DICT: Record<Lang, Dict> = {
       ctaWork: "See projects",
       ctaContact: "Get in touch",
       meta: [
-        { label: "based", value: "Fortaleza, Brazil" },
+        { label: "based in", value: "Fortaleza, Brazil" },
         { label: "study", value: "Computer Science · UNIFOR" },
         { label: "focus", value: "APIs, distributed systems, PostgreSQL" },
-        { label: "work", value: "on-site, hybrid or remote" },
+        { label: "work mode", value: "on-site, hybrid or remote" },
       ],
       scene: {
         caption: "fig. 1 — what the map wasn't meant to show",

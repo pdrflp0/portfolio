@@ -334,12 +334,15 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
               {t.contact.title}
             </h2>
             <p className="mt-6 max-w-lg text-lg text-paper/70">{t.contact.lead}</p>
-            <a
-              href={`mailto:${LINKS.email}`}
-              className="mt-10 inline-block break-all font-display text-[clamp(1.6rem,4.6vw,3.2rem)] italic leading-tight underline decoration-paper/25 decoration-1 underline-offset-[0.18em] transition-colors hover:decoration-paper"
-            >
-              {LINKS.email}
-            </a>
+            <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-3">
+              <a
+                href={`mailto:${LINKS.email}`}
+                className="break-all font-display text-[clamp(1.6rem,4.6vw,3.2rem)] italic leading-tight underline decoration-paper/25 decoration-1 underline-offset-[0.18em] transition-colors hover:decoration-paper"
+              >
+                {LINKS.email}
+              </a>
+              <CopyEmail />
+            </div>
             <p className="mt-6 max-w-xl font-mono text-[12px] leading-relaxed text-paper/55">{t.contact.availability}</p>
 
             <div className="mt-14 flex flex-col gap-8 border-t border-paper/15 pt-8 sm:flex-row sm:items-center sm:justify-between">
@@ -389,6 +392,47 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
     </div>
   );
 });
+
+/** Nem todo computador tem um app de e-mail configurado: copiar resolve sem depender do mailto. */
+function CopyEmail() {
+  const { lang } = useLang();
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return;
+    const id = setTimeout(() => setCopied(false), 2200);
+    return () => clearTimeout(id);
+  }, [copied]);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(LINKS.email);
+    } catch {
+      const area = document.createElement("textarea");
+      area.value = LINKS.email;
+      area.setAttribute("readonly", "");
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand("copy");
+      area.remove();
+    }
+    setCopied(true);
+    logEvent({ kind: "event", label: "copy email" });
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      className="rounded-full border border-paper/25 px-3.5 py-1.5 font-mono text-xs text-paper/80 transition-colors hover:border-paper hover:text-paper"
+    >
+      <span aria-live="polite">
+        {copied ? (lang === "pt" ? "copiado ✓" : "copied ✓") : lang === "pt" ? "copiar e-mail" : "copy email"}
+      </span>
+    </button>
+  );
+}
 
 /** O "sv_cheats 0" do rodapé: ligar os cheats é outra porta. */
 function CheatsToggle({ onActivate }: { onActivate: (o: NoclipOrigin) => void }) {
