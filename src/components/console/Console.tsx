@@ -214,7 +214,7 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
           if (!r) continue;
           const ci = r.ci ? `ci:${r.ci.conclusion ?? r.ci.status}` : "";
           print(L(`  ${s.svc.padEnd(22)}${(r.lastCommit?.sha ?? "").padEnd(9)}${ago(r.pushedAt, lang).padEnd(16)}${ci}`, r.ci?.conclusion === "failure" ? "err" : "text"));
-          if (r.lastCommit) print(L(`  ${"".padEnd(22)}“${r.lastCommit.message}”`, "dim"));
+          if (r.lastCommit?.message) print(L(`  ${"".padEnd(22)}“${r.lastCommit.message}”`, "dim"));
         }
         break;
       }

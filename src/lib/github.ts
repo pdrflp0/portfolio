@@ -45,6 +45,12 @@ type RepoApi = { html_url: string; pushed_at: string; stargazers_count: number }
 type CommitApi = { sha: string; html_url: string; commit: { message: string; author: { date: string } | null } };
 type RunsApi = { workflow_runs: { status: string; conclusion: string | null; html_url: string; created_at: string }[] };
 
+/** Primeira linha do commit; mensagens sem conteúdo ("...", ".") não vão para o painel. */
+function commitTitle(message: string) {
+  const title = message.split("\n")[0].trim().slice(0, 90);
+  return /[\p{L}\p{N}]/u.test(title) ? title : "";
+}
+
 async function repoLive(id: ProjectId): Promise<RepoLive | null> {
   const name = REPOS[id];
   const [repo, commits, runs] = await Promise.all([
@@ -61,7 +67,7 @@ async function repoLive(id: ProjectId): Promise<RepoLive | null> {
     stars: repo.stargazers_count,
     lastCommit: c
       ? {
-          message: c.commit.message.split("\n")[0].slice(0, 90),
+          message: commitTitle(c.commit.message),
           sha: c.sha.slice(0, 7),
           date: c.commit.author?.date ?? repo.pushed_at,
           url: c.html_url,
