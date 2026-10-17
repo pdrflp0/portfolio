@@ -112,20 +112,24 @@ export function SplitBanner({ show }: { show: boolean }) {
     if (!show || !any || shownFor.current === any.t) return;
     shownFor.current = any.t;
     const a = setTimeout(() => setVisible(true), 400);
-    const b = setTimeout(() => setVisible(false), 4200);
-    return () => {
-      clearTimeout(a);
-      clearTimeout(b);
-    };
+    return () => clearTimeout(a);
   }, [show, any]);
 
+  // o tempo de tela não depende de continuar do lado de dentro: saindo antes, o banner some e não fica preso
+  useEffect(() => {
+    if (!visible) return;
+    const b = setTimeout(() => setVisible(false), 3800);
+    return () => clearTimeout(b);
+  }, [visible]);
+
+  const on = visible && show;
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (visible) gsap.fromTo(el, { autoAlpha: 0, y: -16 }, { autoAlpha: 1, y: 0, duration: reduce ? 0 : 0.5, ease: "expo.out" });
+    if (on) gsap.fromTo(el, { autoAlpha: 0, y: -16 }, { autoAlpha: 1, y: 0, duration: reduce ? 0 : 0.5, ease: "expo.out" });
     else gsap.to(el, { autoAlpha: 0, y: -16, duration: reduce ? 0 : 0.35, ease: "power2.in" });
-  }, [visible]);
+  }, [on]);
 
   if (!any) return null;
   const pb = previous.bestAny;

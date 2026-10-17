@@ -392,7 +392,7 @@ export function Arcade({ open, onClose }: { open: boolean; onClose: () => void }
             className="block aspect-[4/3] w-full border border-obs-line [image-rendering:pixelated]"
             aria-label={pt ? "Jogo: destrua os bugs antes que cheguem à produção" : "Game: destroy the bugs before they reach production"}
           />
-          <p ref={msgRef} className="pointer-events-none absolute inset-x-4 bottom-8 text-center text-[11px] text-obs-text transition-opacity" />
+          <p ref={msgRef} className="pointer-events-none absolute inset-x-4 top-[62%] text-center text-[11px] text-obs-text transition-opacity" />
         </div>
         <div className="flex items-center justify-between gap-2 border-t border-obs-line px-4 py-3 sm:hidden">
           <div className="flex gap-2">
