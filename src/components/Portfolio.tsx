@@ -35,6 +35,19 @@ const DOOR_ACHIEVEMENT: Partial<Record<string, AchievementId>> = {
   konami: "konami",
 };
 
+/*
+ * O lado de dentro e o estudo de caso aberto ganham entradas no histórico: o "voltar"
+ * do navegador (ou o gesto de voltar do celular) fecha o estudo de caso e depois
+ * volta à superfície, em vez de tirar a pessoa do site.
+ */
+type Layer = { pf?: "inside" | "drawer"; id?: ProjectId };
+const currentLayer = (): Layer => (window.history.state ?? {}) as Layer;
+/** O estudo de caso a abrir ao carregar: o da entrada do histórico (voltar, recarregar) ou o do link direto. */
+const caseOnLoad = (initialService: ProjectId | null): ProjectId | null => {
+  const { pf, id } = currentLayer();
+  return pf ? (pf === "drawer" ? (id ?? null) : null) : initialService;
+};
+
 type PortfolioProps = { lang: Lang; initialService: ProjectId | null; github: GitHubSnapshot | null };
 
 export function Portfolio({ lang, initialService, github }: PortfolioProps) {
@@ -59,8 +72,14 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
   const originRef = useRef<NoclipOrigin | undefined>(undefined);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const afterEnter = useRef<(() => void) | null>(null);
-  // num link direto (/pt/residuo) a URL só passa a seguir o estado depois que o projeto abre
-  const urlSynced = useRef(initialService === null);
+  // "voltar" apertado no meio da travessia: sai assim que ela terminar
+  const pendingBack = useRef(false);
+  // quem pediu a saída que está voltando pelo histórico (botão, esc, console…)
+  const leaveVia = useRef<string | null>(null);
+  const exitRef = useRef<(via?: string) => void>(() => {});
+  // num link direto (/pt/residuo), ou voltando pelo histórico para um estudo de caso,
+  // a URL só passa a seguir o estado depois que o projeto abre
+  const urlWaitsFor = useRef<ProjectId | null>(typeof window === "undefined" ? null : caseOnLoad(initialService));
 
   const surfaceRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -87,6 +106,7 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
       originRef.current = origin;
       returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       go("entering");
+      if (!currentLayer().pf) window.history.pushState({ pf: "inside" } satisfies Layer, "");
       logEvent({ kind: "event", label: `noclip on`, detail: via });
       unlock("noclip");
       const door = DOOR_ACHIEVEMENT[via];
@@ -100,7 +120,10 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
         go("inside");
         const pending = afterEnter.current;
         afterEnter.current = null;
-        if (pending) pending();
+        if (pendingBack.current) {
+          pendingBack.current = false;
+          exitRef.current("history back");
+        } else if (pending) pending();
         else l.inside.querySelector<HTMLElement>("[data-autofocus]")?.focus({ preventScroll: true });
       });
     },
@@ -130,51 +153,106 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
     [go],
   );
 
+  useEffect(() => {
+    exitRef.current = exit;
+  }, [exit]);
+
+  /** Saída pedida pela interface: desfaz as entradas do histórico e o popstate faz a animação. */
+  const leave = useCallback(
+    (via: string) => {
+      if (modeRef.current !== "inside") return;
+      const { pf } = currentLayer();
+      const depth = pf === "drawer" ? 2 : pf === "inside" ? 1 : 0;
+      if (!depth) return exit(via);
+      leaveVia.current = via;
+      window.history.go(-depth);
+    },
+    [exit],
+  );
+
   const toggle = useCallback(
     (via: string) => {
       if (modeRef.current === "surface") enter(undefined, via);
-      else if (modeRef.current === "inside") exit(via);
+      else if (modeRef.current === "inside") leave(via);
     },
-    [enter, exit],
+    [enter, leave],
   );
 
   /** Garante que estamos do lado de dentro antes de abrir algo de lá. */
   const whenInside = useCallback(
-    (fn: () => void) => {
+    (fn: () => void, via = "console") => {
       if (modeRef.current === "inside") fn();
       else if (modeRef.current === "exiting") return;
       else {
         afterEnter.current = fn;
-        if (modeRef.current === "surface") enter(undefined, "console");
+        if (modeRef.current === "surface") enter(undefined, via);
       }
     },
     [enter],
   );
 
-  const selectService = useCallback((id: ProjectId) => {
-    logEvent({ kind: "request", method: "GET", label: `/services/${id}`, status: 200 });
-    setFocus(null);
-    setSelected(id);
+  const selectService = useCallback(
+    (id: ProjectId, focusOn: "demo" | null = null) => {
+      logEvent({ kind: "request", method: "GET", label: `/services/${id}${focusOn ? `#${focusOn}` : ""}`, status: 200 });
+      setFocus(focusOn);
+      setSelected(id);
+      const entry: Layer = { pf: "drawer", id };
+      const url = `/${lang}/${id}${window.location.search}`;
+      if (currentLayer().pf === "drawer") window.history.replaceState(entry, "", url);
+      else window.history.pushState(entry, "", url);
+    },
+    [lang],
+  );
+
+  const closeDrawer = useCallback(() => {
+    if (currentLayer().pf === "drawer") window.history.back();
+    else setSelected(null);
   }, []);
+
+  // voltar/avançar do navegador: o histórico manda em qual camada está aberta
+  useEffect(() => {
+    const onPop = (e: PopStateEvent) => {
+      const layer = (e.state ?? {}) as Layer;
+      const via = leaveVia.current;
+      leaveVia.current = null;
+      if (layer.pf === "drawer" && layer.id) {
+        const id = layer.id;
+        whenInside(() => {
+          setFocus(null);
+          setSelected(id);
+        }, "history");
+      } else if (layer.pf === "inside") {
+        if (modeRef.current === "surface") enter(undefined, "history");
+        else setSelected(null);
+      } else if (modeRef.current === "inside" || modeRef.current === "entering") {
+        // a entrada de um link direto (/pt/residuo) agora é a superfície
+        const surfacePath = `/${lang}`;
+        if (window.location.pathname !== surfacePath) {
+          window.history.replaceState({}, "", surfacePath + window.location.search);
+        }
+        if (modeRef.current === "inside") exit(via ?? "history back");
+        else pendingBack.current = true;
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [enter, exit, whenInside, lang]);
 
   const consoleApi: ConsoleApi = {
     inside: () => modeRef.current === "inside" || modeRef.current === "entering",
     noclip: () => toggle("console"),
     openService: (id) => whenInside(() => selectService(id)),
-    openDemo: () =>
-      whenInside(() => {
-        logEvent({ kind: "request", method: "GET", label: "/services/residuo#demo", status: 200 });
-        setFocus("demo");
-        setSelected("residuo");
-      }),
+    openDemo: () => whenInside(() => selectService("residuo", "demo")),
     openArcade: () => whenInside(() => setArcadeOpen(true)),
     github,
   };
 
   // a URL acompanha o projeto aberto: dá para copiar e mandar o link do estudo de caso
   useEffect(() => {
-    if (selected === initialService) urlSynced.current = true;
-    if (!urlSynced.current) return;
+    if (urlWaitsFor.current) {
+      if (selected !== urlWaitsFor.current) return;
+      urlWaitsFor.current = null;
+    }
     const path = `/${lang}${selected ? `/${selected}` : ""}`;
     if (window.location.pathname !== path) {
       window.history.replaceState(window.history.state, "", path + window.location.search + window.location.hash);
@@ -185,15 +263,23 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
       : lang === "pt"
         ? "Pedro Felipe — Desenvolvedor back-end"
         : "Pedro Felipe — Back-end developer";
-  }, [lang, selected, initialService]);
+  }, [lang, selected]);
 
-  // link direto: mostra a superfície por um instante e atravessa até o projeto
+  // link direto: mostra a superfície por um instante e atravessa até o projeto.
+  // Voltando pelo histórico (ou recarregando) com o painel aberto, reabre onde estava.
   useEffect(() => {
-    if (!initialService) return;
-    const id = setTimeout(() => {
-      afterEnter.current = () => selectService(initialService);
-      enter(undefined, "link");
-    }, 900);
+    // o Next guarda a página anterior e a devolve intacta no "voltar": aí o painel já está aberto
+    if (modeRef.current !== "surface") return;
+    const restoring = Boolean(currentLayer().pf);
+    const target = caseOnLoad(initialService);
+    if (!target && !restoring) return;
+    const id = setTimeout(
+      () => {
+        if (target) afterEnter.current = () => selectService(target);
+        enter(undefined, restoring ? "history" : "link");
+      },
+      restoring ? 300 : 900,
+    );
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -211,11 +297,18 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
     window.history.replaceState(window.history.state, "", window.location.pathname + (rest ? `?${rest}` : "") + window.location.hash);
   }, []);
 
-  // saindo para outra página (ex.: o diário de bugs) com o painel aberto, a página de destino precisa rolar
-  useEffect(() => () => document.documentElement.classList.remove("noclip-active"), []);
-
-  // estado inicial das camadas escondidas
+  // saindo para outra página (ex.: o diário de bugs) com o painel aberto, a página de destino precisa rolar;
+  // voltando para cá com o painel ainda aberto, a trava de rolagem volta junto
   useEffect(() => {
+    if (modeRef.current === "inside") document.documentElement.classList.add("noclip-active");
+    return () => document.documentElement.classList.remove("noclip-active");
+  }, []);
+
+  // estado inicial das camadas escondidas — uma vez só: os efeitos rodam de novo quando a página volta do histórico
+  const initialized = useRef(false);
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
     gsap.set([hostRef.current, voidRef.current, insideRef.current], { autoAlpha: 0 });
     bootstrapVisitLog();
     bootstrapPageTrace();
@@ -253,7 +346,7 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
       }
       if (e.key === "Escape" && modeRef.current === "inside") {
         if (document.querySelector("[data-drawer-open]")) return;
-        exit("key esc");
+        leave("key esc");
         return;
       }
       if (e.key.length === 1) {
@@ -266,7 +359,7 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [toggle, exit]);
+  }, [toggle, leave]);
 
   // a dica no console do navegador — e `noclip` funciona digitado lá também
   useEffect(() => {
@@ -311,8 +404,8 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
         selected={selected}
         focus={focus}
         onSelect={selectService}
-        onCloseDrawer={() => setSelected(null)}
-        onExit={() => exit("button")}
+        onCloseDrawer={closeDrawer}
+        onExit={() => leave("button")}
         onConsole={() => setConsoleOpen(true)}
         onPlay={() => setArcadeOpen(true)}
         modalOpen={arcadeOpen}
