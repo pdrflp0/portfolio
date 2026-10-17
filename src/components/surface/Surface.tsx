@@ -4,6 +4,7 @@ import { forwardRef, useEffect, useRef, useState } from "react";
 import { LINKS, PROJECTS, SKILLS } from "@/content/site";
 import { useLang } from "@/lib/i18n";
 import { logEvent } from "@/lib/visit-log";
+import { unlock } from "@/lib/achievements";
 import { LangToggle } from "@/components/LangToggle";
 import { GlitchDot } from "./GlitchDot";
 import { HeroScene } from "./HeroScene";
@@ -144,7 +145,7 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
             </div>
 
             <div className="hero-in mx-auto w-full max-w-[540px] lg:mx-0 lg:justify-self-end" style={{ ["--d" as string]: "380ms" }}>
-              <HeroScene paused={hidden} onNoclip={(o) => onNoclip(o, "scene")} />
+              <HeroScene paused={hidden} onNoclip={onNoclip} />
             </div>
           </div>
 
@@ -322,7 +323,10 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
                 <a
                   href={LINKS.cv.pt}
                   download="Pedro-Felipe-CV-PT.pdf"
-                  onClick={() => logEvent({ kind: "event", label: "download cv-pt" })}
+                  onClick={() => {
+                    logEvent({ kind: "event", label: "download cv-pt" });
+                    unlock("cv");
+                  }}
                   className="rounded-full border border-paper/25 px-3.5 py-1.5 font-mono text-xs transition-colors hover:border-paper"
                 >
                   PDF · {t.contact.cvPt}
@@ -330,7 +334,10 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
                 <a
                   href={LINKS.cv.en}
                   download="Pedro-Felipe-CV-EN.pdf"
-                  onClick={() => logEvent({ kind: "event", label: "download cv-en" })}
+                  onClick={() => {
+                    logEvent({ kind: "event", label: "download cv-en" });
+                    unlock("cv");
+                  }}
                   className="rounded-full border border-paper/25 px-3.5 py-1.5 font-mono text-xs transition-colors hover:border-paper"
                 >
                   PDF · {t.contact.cvEn}
@@ -364,6 +371,7 @@ function CheatsToggle({ onActivate }: { onActivate: (o: NoclipOrigin) => void })
         const r = e.currentTarget.getBoundingClientRect();
         setOn(true);
         logEvent({ kind: "event", label: "sv_cheats 1" });
+        unlock("console");
         setTimeout(() => {
           onActivate({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
           setTimeout(() => setOn(false), 1500);

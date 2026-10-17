@@ -52,6 +52,8 @@ export function EdgeOfMap({
     };
 
     const push = (amount: number) => {
+      // rolando dentro do console não conta como empurrar a parede
+      if (document.getElementById("console-input")) return;
       const now = performance.now();
       if (!atBottom()) {
         bottomSince = 0;

@@ -6,8 +6,30 @@ import { PROJECTS, type ProjectId } from "@/content/site";
 import { CASES, SERVICES } from "@/content/services";
 import { useLang } from "@/lib/i18n";
 import { logEvent } from "@/lib/visit-log";
+import { trackCaseStudy } from "@/lib/achievements";
+import type { GitHubSnapshot } from "@/lib/github";
+import { RelTime } from "@/components/RelTime";
+import dynamic from "next/dynamic";
 
-export function ServiceDrawer({ id, onClose }: { id: ProjectId | null; onClose: () => void }) {
+const ResiduoDemo = dynamic(() => import("./ResiduoDemo").then((m) => m.ResiduoDemo), {
+  ssr: false,
+  loading: () => <div className="h-72 border border-obs-line bg-obs-0/60" aria-hidden />,
+});
+
+export function ServiceDrawer({
+  id,
+  focus,
+  github,
+  onClose,
+  onPlay,
+}: {
+  id: ProjectId | null;
+  /** abre já rolado até uma seção (ex.: a demo do Resíduo) */
+  focus?: "demo" | null;
+  github: GitHubSnapshot | null;
+  onClose: () => void;
+  onPlay: () => void;
+}) {
   const { t, lang } = useLang();
   const [shown, setShown] = useState<ProjectId | null>(id);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -57,9 +79,18 @@ export function ServiceDrawer({ id, onClose }: { id: ProjectId | null; onClose: 
     }
     panel.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
     panel.scrollTop = 0;
+    trackCaseStudy(shown);
+    let jump: ReturnType<typeof setTimeout> | undefined;
+    if (focus === "demo") {
+      jump = setTimeout(() => {
+        panel.querySelector<HTMLElement>("#residuo-demo")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+      }, reduce ? 0 : 450);
+    }
     return () => {
       tl.kill();
+      clearTimeout(jump);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shown]);
 
   useEffect(() => {
@@ -80,6 +111,7 @@ export function ServiceDrawer({ id, onClose }: { id: ProjectId | null; onClose: 
   const svc = SERVICES.find((s) => s.id === shown)!;
   const text = t.projects[shown];
   const study = CASES[shown];
+  const live = github?.repos[shown];
 
   return (
     <div className="fixed inset-0 z-40" data-drawer-open>
@@ -111,13 +143,13 @@ export function ServiceDrawer({ id, onClose }: { id: ProjectId | null; onClose: 
             {text.summary}
           </p>
 
-          <dl data-stagger className="mt-8 grid grid-cols-2 gap-px overflow-hidden border border-obs-line bg-obs-line sm:grid-cols-4">
-            <div className="bg-obs-2 p-3">
+          <dl data-stagger className="mt-8 flex flex-wrap gap-px overflow-hidden border border-obs-line bg-obs-line">
+            <div className="grow basis-[calc(50%-1px)] bg-obs-2 p-3 sm:basis-0">
               <dt className="text-[10px] text-obs-dim">status</dt>
               <dd className="mt-1 text-[13px] text-obs-text">{svc.status}</dd>
             </div>
             {svc.metrics.map((m) => (
-              <div key={m.label.en} className="bg-obs-2 p-3">
+              <div key={m.label.en} className="grow basis-[calc(50%-1px)] bg-obs-2 p-3 sm:basis-0">
                 <dt className="text-[10px] text-obs-dim">{m.label[lang]}</dt>
                 <dd className="mt-1 text-[13px] text-obs-text">{m.value}</dd>
               </div>
@@ -131,6 +163,66 @@ export function ServiceDrawer({ id, onClose }: { id: ProjectId | null; onClose: 
               </li>
             ))}
           </ul>
+
+          {live && (
+            <div data-stagger className="mt-4 border border-obs-line bg-obs-0/50 px-3 py-2.5 text-[11px] leading-relaxed">
+              <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-obs-dim">
+                <span className="flex items-center gap-1.5 text-obs-text">
+                  <span className="size-1.5 rounded-full bg-ok" aria-hidden />
+                  github
+                </span>
+                <span>
+                  push <RelTime iso={live.pushedAt} className="text-obs-text" />
+                </span>
+                {live.ci && (
+                  <a href={live.ci.url} target="_blank" rel="noreferrer" className="underline decoration-obs-line underline-offset-4 hover:decoration-obs-teal">
+                    ci{" "}
+                    <span className={live.ci.conclusion === "success" ? "text-ok" : live.ci.conclusion === "failure" ? "text-[#ff8b84]" : "text-warn"}>
+                      {live.ci.conclusion ?? live.ci.status}
+                    </span>
+                  </a>
+                )}
+                {live.stars > 0 && <span>★ {live.stars}</span>}
+              </p>
+              {live.lastCommit && (
+                <a href={live.lastCommit.url} target="_blank" rel="noreferrer" className="mt-1 block truncate text-obs-dim hover:text-obs-text">
+                  <span className="text-obs-teal">{live.lastCommit.sha}</span> {live.lastCommit.message}
+                </a>
+              )}
+            </div>
+          )}
+
+          {shown === "residuo" && (
+            <section id="residuo-demo" data-stagger className="mt-12 scroll-mt-16">
+              <h3 className="flex items-baseline gap-3 text-[12px] text-obs-teal">
+                <span className="text-obs-dim">▶</span>
+                {lang === "pt" ? "Reproduza o bug você mesmo" : "Reproduce the bug yourself"}
+              </h3>
+              <p className="mt-2 font-sans text-[14px] leading-relaxed text-obs-text/70">
+                {lang === "pt"
+                  ? "Execute as seis etapas e veja o registro excluído voltar. Depois rode de novo com a correção."
+                  : "Run the six steps and watch the deleted record come back. Then run it again with the fix."}
+              </p>
+              <div className="mt-4">
+                <ResiduoDemo />
+              </div>
+            </section>
+          )}
+
+          {shown === "space-invaders" && (
+            <button
+              type="button"
+              data-stagger
+              onClick={onPlay}
+              className="mt-10 flex w-full items-center justify-between border border-obs-rust/60 bg-obs-rust/10 px-4 py-4 text-left transition-colors hover:bg-obs-rust/20"
+            >
+              <span>
+                <span className="block text-[13px] text-obs-text">{lang === "pt" ? "Jogar a versão bugs edition" : "Play the bugs edition"}</span>
+                <span className="block text-[11px] text-obs-dim">{lang === "pt" ? "os aliens são bugs e erros 500" : "the aliens are bugs and 500 errors"}</span>
+              </span>
+              <span className="text-obs-rust" aria-hidden>▶ PLAY</span>
+            </button>
+          )}
 
           {study ? (
             <div className="mt-12 space-y-10">

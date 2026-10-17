@@ -2,9 +2,14 @@
 
 import { forwardRef, useEffect, useState } from "react";
 import { LINKS, type ProjectId } from "@/content/site";
+import { SERVICES } from "@/content/services";
 import { useLang } from "@/lib/i18n";
 import { logEvent, type Trace } from "@/lib/visit-log";
+import { ACHIEVEMENTS, unlock, useUnlocked } from "@/lib/achievements";
+import type { GitHubSnapshot } from "@/lib/github";
 import { LangToggle } from "@/components/LangToggle";
+import { RelTime } from "@/components/RelTime";
+import { AchievementsPanel } from "@/components/achievements/Achievements";
 import { ServiceMap } from "./ServiceMap";
 import { VisitLog } from "./VisitLog";
 import { ServiceDrawer } from "./ServiceDrawer";
@@ -12,17 +17,26 @@ import { ServiceDrawer } from "./ServiceDrawer";
 type Props = {
   active: boolean;
   trace: Trace | null;
+  github: GitHubSnapshot | null;
+  selected: ProjectId | null;
+  focus: "demo" | null;
+  onSelect: (id: ProjectId) => void;
+  onCloseDrawer: () => void;
   onExit: () => void;
+  onConsole: () => void;
+  onPlay: () => void;
+  /** algo abriu por cima (o jogo): o painel atrás fica inerte */
+  modalOpen: boolean;
 };
 
-export const Inside = forwardRef<HTMLDivElement, Props>(function Inside({ active, trace, onExit }, ref) {
+export const Inside = forwardRef<HTMLDivElement, Props>(function Inside(
+  { active, trace, github, selected, focus, onSelect, onCloseDrawer, onExit, onConsole, onPlay, modalOpen },
+  ref,
+) {
+  const blocked = selected !== null || modalOpen;
   const { t, lang } = useLang();
-  const [selected, setSelected] = useState<ProjectId | null>(null);
-
-  const open = (id: ProjectId) => {
-    logEvent({ kind: "request", method: "GET", label: `/services/${id}`, status: 200, ms: 0 });
-    setSelected(id);
-  };
+  const unlocked = useUnlocked();
+  const pt = lang === "pt";
 
   return (
     <div
@@ -30,31 +44,43 @@ export const Inside = forwardRef<HTMLDivElement, Props>(function Inside({ active
       className="obs-scroll fixed inset-0 z-30 overflow-y-auto bg-obs-0 font-mono text-obs-text"
       aria-hidden={!active || undefined}
       inert={!active || undefined}
-      aria-label={lang === "pt" ? "Painel do sistema" : "System view"}
+      aria-label={pt ? "Painel do sistema" : "System view"}
       role="region"
     >
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_top,rgb(110_158_173/0.08),transparent_60%)]" />
 
       {/* barra superior */}
-      <header data-boot inert={selected !== null || undefined} className="sticky top-0 z-10 border-b border-obs-line bg-obs-0/90 backdrop-blur">
-        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 text-[11px] sm:px-6">
+      <header data-boot inert={blocked || undefined} className="sticky top-0 z-10 border-b border-obs-line bg-obs-0/90 backdrop-blur">
+        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3 text-[11px] sm:px-6">
           <span className="flex items-center gap-2 text-obs-text">
             <span className="missing-texture inline-block size-2.5" aria-hidden />
             pdrflp<span className="text-obs-dim">/prod</span>
           </span>
-          <span className="flex items-center gap-2 text-obs-dim">
+          <span className="hidden items-center gap-2 text-obs-dim md:flex">
             <span className="pulse-dot size-1.5 rounded-full bg-ok" aria-hidden />
-            {lang === "pt" ? "todos os sistemas operando" : "all systems nominal"}
+            {pt ? "todos os sistemas operando" : "all systems nominal"}
           </span>
-          <span className="hidden sm:inline">
-            <Uptime label={lang === "pt" ? "sessão" : "session"} />
+          <span className="hidden lg:inline">
+            <Uptime label={pt ? "sessão" : "session"} />
           </span>
           {trace?.region && (
-            <span className="hidden text-obs-dim sm:inline">
+            <span className="hidden text-obs-dim xl:inline">
               edge <span className="text-obs-text">{trace.region}{trace.city ? ` · ${trace.city}` : ""}</span>
             </span>
           )}
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            <span className="hidden text-obs-dim sm:inline" title={pt ? "segredos encontrados" : "secrets found"}>
+              <span className="text-[#ff4fd8]">◆</span> {unlocked.length}/{ACHIEVEMENTS.length}
+            </span>
+            <button
+              type="button"
+              onClick={onConsole}
+              className="flex items-center gap-1.5 rounded border border-obs-line px-2 py-1 text-obs-dim transition-colors hover:border-obs-teal hover:text-obs-teal"
+            >
+              <span aria-hidden>&gt;_</span>
+              <span className="hidden sm:inline">console</span>
+              <kbd className="hidden rounded border border-obs-line px-1 text-[10px] sm:inline">~</kbd>
+            </button>
             <LangToggle tone="obsidian" />
             <button
               type="button"
@@ -62,28 +88,38 @@ export const Inside = forwardRef<HTMLDivElement, Props>(function Inside({ active
               onClick={onExit}
               className="flex items-center gap-2 rounded border border-obs-line px-2.5 py-1 text-obs-text transition-colors hover:border-obs-teal hover:text-obs-teal"
             >
-              <span aria-hidden>↑</span> {t.noclip.back}
+              <span aria-hidden>↑</span>
+              <span className="max-sm:sr-only">{t.noclip.back}</span>
               <kbd className="hidden rounded border border-obs-line px-1 text-[10px] text-obs-dim sm:inline">esc</kbd>
             </button>
           </div>
         </div>
       </header>
 
-      <main inert={selected !== null || undefined} className="relative mx-auto grid max-w-[1400px] grid-cols-1 gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <main inert={blocked || undefined} className="relative mx-auto grid max-w-[1400px] grid-cols-1 gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="grid min-w-0 grid-cols-1 gap-4">
-          <Panel title={lang === "pt" ? "topologia · serviços" : "topology · services"} meta={lang === "pt" ? "clique num serviço" : "click a service"}>
-            <ServiceMap active={active} onSelect={open} />
+          <Panel title={pt ? "topologia · serviços" : "topology · services"} meta={pt ? "clique num serviço" : "click a service"}>
+            <ServiceMap active={active} github={github} onSelect={onSelect} />
           </Panel>
 
           <Panel title="env | grep PEDRO" meta="whoami">
             <EnvBlock />
           </Panel>
+
+          <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2">
+            <Panel title="achievements" meta={pt ? "segredos deste mapa" : "secrets on this map"}>
+              <AchievementsPanel />
+            </Panel>
+            <Panel title="deploys" meta={github ? "github" : pt ? "offline" : "offline"}>
+              <Deploys github={github} onSelect={onSelect} />
+            </Panel>
+          </div>
         </div>
 
         <div className="min-w-0 lg:sticky lg:top-[58px] lg:h-[calc(100dvh-74px)]">
           <Panel
             title="visit.log"
-            meta={lang === "pt" ? "esta visita, ao vivo" : "this visit, live"}
+            meta={pt ? "esta visita, ao vivo" : "this visit, live"}
             className="h-[420px] lg:h-full"
           >
             <VisitLog trace={trace} />
@@ -91,10 +127,63 @@ export const Inside = forwardRef<HTMLDivElement, Props>(function Inside({ active
         </div>
       </main>
 
-      <ServiceDrawer id={selected} onClose={() => setSelected(null)} />
+      <div inert={modalOpen || undefined} className="contents">
+        <ServiceDrawer id={selected} focus={focus} github={github} onClose={onCloseDrawer} onPlay={onPlay} />
+      </div>
     </div>
   );
 });
+
+/** Últimos commits reais de cada repositório, como um log de deploys. */
+function Deploys({ github, onSelect }: { github: GitHubSnapshot | null; onSelect: (id: ProjectId) => void }) {
+  const { lang } = useLang();
+  const pt = lang === "pt";
+  if (!github) {
+    return (
+      <p className="p-4 text-[11px] leading-relaxed text-obs-dim">
+        {pt
+          ? "Sem conexão com a API do GitHub agora. Os repositórios continuam em github.com/pdrflp0."
+          : "No connection to the GitHub API right now. The repositories are still at github.com/pdrflp0."}
+      </p>
+    );
+  }
+  const rows = (Object.entries(github.repos) as [ProjectId, NonNullable<GitHubSnapshot["repos"][ProjectId]>][]).sort(
+    (a, b) => new Date(b[1].pushedAt).getTime() - new Date(a[1].pushedAt).getTime(),
+  );
+  return (
+    <div className="flex h-full flex-col">
+      <ol className="flex-1 divide-y divide-obs-line text-[11px]">
+        {rows.map(([id, r]) => {
+          const svc = SERVICES.find((s) => s.id === id)!;
+          return (
+            <li key={id}>
+              <button type="button" onClick={() => onSelect(id)} className="grid w-full grid-cols-[minmax(0,1fr)_auto] gap-x-3 px-4 py-2.5 text-left transition-colors hover:bg-obs-2">
+                <span className="truncate text-obs-text">
+                  {svc.svc}
+                  {r.ci && (
+                    <span className={`ml-2 ${r.ci.conclusion === "success" ? "text-ok" : r.ci.conclusion === "failure" ? "text-[#ff8b84]" : "text-warn"}`}>
+                      ci:{r.ci.conclusion ?? r.ci.status}
+                    </span>
+                  )}
+                </span>
+                <RelTime iso={r.pushedAt} className="text-obs-dim" />
+                {r.lastCommit && (
+                  <span className="col-span-2 truncate text-obs-dim">
+                    <span className="text-obs-teal">{r.lastCommit.sha}</span> {r.lastCommit.message}
+                  </span>
+                )}
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+      <p className="border-t border-obs-line px-4 py-2 text-[10px] text-obs-dim">
+        {pt ? "dados reais da API do GitHub · atualizado " : "real data from the GitHub API · updated "}
+        <RelTime iso={github.fetchedAt} />
+      </p>
+    </div>
+  );
+}
 
 function Panel({
   title,
@@ -163,9 +252,9 @@ function EnvBlock() {
     <div className="grid gap-6 p-4 text-[12px] leading-relaxed md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
       <dl className="min-w-0 space-y-1">
         {rows.map(([k, v, tone]) => (
-          <div key={k} className="flex min-w-0 gap-0">
-            <dt className="shrink-0 text-obs-teal">{k}</dt>
-            <dd className="min-w-0 break-words">
+          <div key={k} className="min-w-0 break-words">
+            <dt className="inline text-obs-teal">{k}</dt>
+            <dd className="inline">
               <span className="text-obs-dim">=&quot;</span>
               <span className={tone === "ok" ? "text-ok" : tone === "rust" ? "text-obs-rust" : "text-obs-text"}>{v}</span>
               <span className="text-obs-dim">&quot;</span>
@@ -197,7 +286,10 @@ function EnvLink({ method, href, label, download }: { method: string; href: stri
         download={download || undefined}
         target={external ? "_blank" : undefined}
         rel={external ? "noreferrer" : undefined}
-        onClick={() => logEvent({ kind: "event", label: `open ${label}` })}
+        onClick={() => {
+          logEvent({ kind: "event", label: `open ${label}` });
+          if (download) unlock("cv");
+        }}
         className="min-w-0 truncate text-obs-text underline decoration-obs-line underline-offset-4 hover:decoration-obs-teal"
       >
         {label}

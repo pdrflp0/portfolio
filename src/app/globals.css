@@ -76,10 +76,12 @@ html.noclip-active body {
   color: var(--paper);
 }
 
-:focus-visible {
-  outline: 2px solid var(--teal);
-  outline-offset: 3px;
-  border-radius: 2px;
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
 }
 
 /* Textura "faltando" — o xadrez magenta/preto dos motores de jogo */
@@ -357,13 +359,15 @@ html.noclip-active body {
 }
 
 .player-shadow { fill: rgb(21 23 27 / 0.18); }
-.player-leg { fill: #2b2f36; }
-.player-body { fill: #9a5640; }
-.player-arm { fill: #7e4533; }
-.player-head { fill: #d8b18c; }
-.player-hair { fill: #1f2226; }
-.player-eye { fill: #1f2226; }
-.player-headset { fill: #3f6f7e; }
+.player-jeans { fill: #34404f; }
+.player-shoe { fill: #15171b; }
+.player-shirt { fill: #1b1d21; }
+.player-shirt-dark { fill: #111215; }
+.player-collar { fill: #2a2d33; }
+.player-skin { fill: #e0b394; }
+.player-skin-dark { fill: #c99a7b; }
+.player-hair { fill: #1d1714; }
+.player-eye { fill: #1d1714; }
 
 .player-leg,
 .player-arm {

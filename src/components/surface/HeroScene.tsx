@@ -49,7 +49,13 @@ function Box({ at, size, className = "" }: { at: V3; size: V3; className?: strin
 const DESK: V3 = [4.4, 1.85, 0];
 const SEAM: V3 = [0.42, 2.5, 0];
 
-export function HeroScene({ onNoclip, paused }: { onNoclip: (o: NoclipOrigin) => void; paused: boolean }) {
+export function HeroScene({
+  onNoclip,
+  paused,
+}: {
+  onNoclip: (o: NoclipOrigin, via: "player" | "seam") => void;
+  paused: boolean;
+}) {
   const { t } = useLang();
   const playerRef = useRef<SVGGElement>(null);
   const spriteRef = useRef<SVGGElement>(null);
@@ -179,10 +185,11 @@ export function HeroScene({ onNoclip, paused }: { onNoclip: (o: NoclipOrigin) =>
       .call(() => {
         at.x = DESK[0];
         at.y = DESK[1];
-        const [rx, ry] = P(DESK[0], DESK[1]);
+        const [cx, cy] = P(DESK[0], DESK[1]);
+        gsap.set(ring, { attr: { cx, cy } });
         gsap.fromTo(
           ring,
-          { attr: { cx: rx, cy: ry, rx: 2, ry: 1 }, opacity: 0.9 },
+          { attr: { rx: 2, ry: 1 }, opacity: 0.9 },
           { attr: { rx: 26, ry: 13 }, opacity: 0, duration: 0.7, ease: "expo.out" },
         );
       })
@@ -215,15 +222,15 @@ export function HeroScene({ onNoclip, paused }: { onNoclip: (o: NoclipOrigin) =>
     sync();
   }, [paused, sync]);
 
-  const activate = (el: Element) => {
+  const activate = (el: Element, via: "player" | "seam") => {
     const r = el.getBoundingClientRect();
-    onNoclip({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+    onNoclip({ x: r.left + r.width / 2, y: r.top + r.height / 2 }, via);
   };
 
-  const keyActivate = (e: React.KeyboardEvent<SVGElement>) => {
+  const keyActivate = (via: "player" | "seam") => (e: React.KeyboardEvent<SVGElement>) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      activate(e.currentTarget);
+      activate(e.currentTarget, via);
     }
   };
 
@@ -277,8 +284,8 @@ export function HeroScene({ onNoclip, paused }: { onNoclip: (o: NoclipOrigin) =>
           role="button"
           tabIndex={0}
           aria-label={t.hero.scene.seam}
-          onClick={(e) => activate(e.currentTarget)}
-          onKeyDown={keyActivate}
+          onClick={(e) => activate(e.currentTarget, "seam")}
+          onKeyDown={keyActivate("seam")}
         />
 
         {/* janela */}
@@ -324,7 +331,7 @@ export function HeroScene({ onNoclip, paused }: { onNoclip: (o: NoclipOrigin) =>
         <Box at={[4.05, 0.62, 0.9]} size={[0.95, 0.32, 0.04]} />
 
         {/* anel de respawn */}
-        <ellipse ref={ringRef} className="scene-ring" rx="0" ry="0" />
+        <ellipse ref={ringRef} className="scene-ring" cx={P(...DESK)[0]} cy={P(...DESK)[1]} rx="0" ry="0" />
 
         {/* o jogador */}
         <g
@@ -334,8 +341,8 @@ export function HeroScene({ onNoclip, paused }: { onNoclip: (o: NoclipOrigin) =>
           tabIndex={0}
           aria-label={t.hero.scene.player}
           data-state="type"
-          onClick={(e) => activate(e.currentTarget)}
-          onKeyDown={keyActivate}
+          onClick={(e) => activate(e.currentTarget, "player")}
+          onKeyDown={keyActivate("player")}
           onPointerEnter={(e) => {
             // só mouse pausa: no toque não existe "sair de cima" e a cena ficaria parada
             if (e.pointerType !== "mouse") return;
@@ -347,19 +354,43 @@ export function HeroScene({ onNoclip, paused }: { onNoclip: (o: NoclipOrigin) =>
             sync();
           }}
         >
-          <rect x="-16" y="-48" width="32" height="54" fill="transparent" />
+          <rect x="-16" y="-52" width="32" height="58" fill="transparent" />
           <ellipse className="player-shadow" cx="0" cy="0" rx="9" ry="4.5" />
+          {/* o Pedro em pixel: cabelo volumoso, sobrancelha grossa, bigode e cavanhaque, camisa preta */}
           <g ref={spriteRef} shapeRendering="crispEdges">
-            <rect className="player-leg leg-a" x="-5" y="-11" width="4" height="11" />
-            <rect className="player-leg leg-b" x="1" y="-11" width="4" height="11" />
-            <rect className="player-arm arm-a" x="-9" y="-25" width="3" height="12" />
-            <rect className="player-body" x="-6" y="-26" width="12" height="16" />
-            <rect className="player-arm arm-b" x="6" y="-25" width="3" height="12" />
-            <rect className="player-head" x="-5" y="-37" width="10" height="10" />
-            <rect className="player-hair" x="-5" y="-38" width="10" height="4" />
-            <rect className="player-hair" x="-5" y="-38" width="3" height="7" />
-            <rect className="player-eye" x="2.5" y="-32" width="1.5" height="2" />
-            <rect className="player-headset" x="-6.5" y="-34" width="2" height="4" />
+            <g className="player-leg leg-a">
+              <rect className="player-jeans" x="-5" y="-12" width="4" height="10" />
+              <rect className="player-shoe" x="-5" y="-2" width="5" height="2" />
+            </g>
+            <g className="player-leg leg-b">
+              <rect className="player-jeans" x="1" y="-12" width="4" height="10" />
+              <rect className="player-shoe" x="1" y="-2" width="5" height="2" />
+            </g>
+            <g className="player-arm arm-a">
+              <rect className="player-shirt-dark" x="-9" y="-27" width="3" height="6" />
+              <rect className="player-skin-dark" x="-9" y="-21" width="3" height="7" />
+            </g>
+            <rect className="player-shirt" x="-6" y="-28" width="12" height="17" />
+            <rect className="player-collar" x="-2" y="-28" width="5" height="2" />
+            <rect className="player-skin" x="0" y="-28" width="2" height="2" />
+            <g className="player-arm arm-b">
+              <rect className="player-shirt-dark" x="6" y="-27" width="3" height="6" />
+              <rect className="player-skin" x="6" y="-21" width="3" height="7" />
+            </g>
+            <rect className="player-skin" x="-1" y="-30" width="4" height="2" />
+            <rect className="player-skin" x="-5" y="-40" width="11" height="10" />
+            <rect className="player-skin-dark" x="-6" y="-36" width="2" height="3" />
+            <rect className="player-hair" x="-6" y="-43" width="12" height="4" />
+            <rect className="player-hair" x="-7" y="-41" width="3" height="6" />
+            <rect className="player-hair" x="-5" y="-45" width="3" height="2" />
+            <rect className="player-hair" x="-1" y="-46" width="4" height="3" />
+            <rect className="player-hair" x="4" y="-44" width="3" height="3" />
+            <rect className="player-hair" x="5" y="-41" width="2" height="2" />
+            <rect className="player-hair" x="1" y="-37" width="4" height="1" />
+            <rect className="player-eye" x="3" y="-35" width="2" height="2" />
+            <rect className="player-hair" x="1" y="-32" width="5" height="1" />
+            <rect className="player-hair" x="0" y="-31" width="2" height="2" />
+            <rect className="player-hair" x="2" y="-30" width="4" height="2" />
           </g>
         </g>
 

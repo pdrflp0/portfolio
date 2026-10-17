@@ -1,34 +1,59 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import gsap from "gsap";
+import type { ProjectId } from "@/content/site";
+import type { GitHubSnapshot } from "@/lib/github";
 import { LangProvider, useLang } from "@/lib/i18n";
 import { bootstrapVisitLog, logEvent, traceRequest, type Trace } from "@/lib/visit-log";
+import { unlock, type AchievementId } from "@/lib/achievements";
 import { Surface, type NoclipOrigin } from "./surface/Surface";
 import { Inside } from "./inside/Inside";
+import type { ConsoleApi } from "./console/Console";
+import { AchievementToasts } from "./achievements/Achievements";
 import { VoidLayer } from "./noclip/VoidLayer";
 import { enterNoclip, exitNoclip, type NoclipLayers } from "./noclip/transition";
+
+// console e jogo só carregam quando alguém abre: a superfície continua leve para o recrutador
+const Console = dynamic(() => import("./console/Console").then((m) => m.Console), { ssr: false });
+const Arcade = dynamic(() => import("./inside/Arcade").then((m) => m.Arcade), { ssr: false });
 
 type Mode = "surface" | "entering" | "inside" | "exiting";
 
 const KONAMI = ["arrowup", "arrowup", "arrowdown", "arrowdown", "arrowleft", "arrowright", "arrowleft", "arrowright", "b", "a"];
 
-export function Portfolio() {
+/** Cada porta para dentro destrava a própria conquista. */
+const DOOR_ACHIEVEMENT: Partial<Record<string, AchievementId>> = {
+  glitch: "glitch-dot",
+  player: "player",
+  seam: "seam",
+  about: "about-door",
+  edge: "edge",
+  konami: "konami",
+};
+
+export function Portfolio({ github }: { github: GitHubSnapshot | null }) {
   return (
     <LangProvider>
-      <Stage />
+      <Stage github={github} />
     </LangProvider>
   );
 }
 
-function Stage() {
+function Stage({ github }: { github: GitHubSnapshot | null }) {
   const { lang } = useLang();
   const [mode, setMode] = useState<Mode>("surface");
   const [trace, setTrace] = useState<Trace | null>(null);
+  const [selected, setSelected] = useState<ProjectId | null>(null);
+  const [focus, setFocus] = useState<"demo" | null>(null);
+  const [consoleOpen, setConsoleOpen] = useState(false);
+  const [arcadeOpen, setArcadeOpen] = useState(false);
   const modeRef = useRef<Mode>("surface");
   const scrollRef = useRef(0);
   const originRef = useRef<NoclipOrigin | undefined>(undefined);
   const returnFocusRef = useRef<HTMLElement | null>(null);
+  const afterEnter = useRef<(() => void) | null>(null);
 
   const surfaceRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -56,12 +81,18 @@ function Stage() {
       returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       go("entering");
       logEvent({ kind: "event", label: `noclip on`, detail: via });
+      unlock("noclip");
+      const door = DOOR_ACHIEVEMENT[via];
+      if (door) unlock(door);
       traceRequest("noclip").then((t) => t && setTrace(t));
       const { tl, scrollY } = enterNoclip(l, origin);
       scrollRef.current = scrollY;
       tl.eventCallback("onComplete", () => {
         go("inside");
-        l.inside.querySelector<HTMLElement>("[data-autofocus]")?.focus({ preventScroll: true });
+        const pending = afterEnter.current;
+        afterEnter.current = null;
+        if (pending) pending();
+        else l.inside.querySelector<HTMLElement>("[data-autofocus]")?.focus({ preventScroll: true });
       });
     },
     [go],
@@ -71,6 +102,8 @@ function Stage() {
     (via = "click") => {
       const l = layers();
       if (!l || modeRef.current !== "inside") return;
+      setSelected(null);
+      setArcadeOpen(false);
       go("exiting");
       logEvent({ kind: "event", label: `noclip off`, detail: via });
       const tl = exitNoclip(l, scrollRef.current, originRef.current);
@@ -94,20 +127,54 @@ function Stage() {
     [enter, exit],
   );
 
+  /** Garante que estamos do lado de dentro antes de abrir algo de lá. */
+  const whenInside = useCallback(
+    (fn: () => void) => {
+      if (modeRef.current === "inside") fn();
+      else if (modeRef.current === "exiting") return;
+      else {
+        afterEnter.current = fn;
+        if (modeRef.current === "surface") enter(undefined, "console");
+      }
+    },
+    [enter],
+  );
+
+  const selectService = useCallback((id: ProjectId) => {
+    logEvent({ kind: "request", method: "GET", label: `/services/${id}`, status: 200 });
+    setFocus(null);
+    setSelected(id);
+  }, []);
+
+  const consoleApi: ConsoleApi = {
+    inside: () => modeRef.current === "inside" || modeRef.current === "entering",
+    noclip: () => toggle("console"),
+    openService: (id) => whenInside(() => selectService(id)),
+    openDemo: () =>
+      whenInside(() => {
+        logEvent({ kind: "request", method: "GET", label: "/services/residuo#demo", status: 200 });
+        setFocus("demo");
+        setSelected("residuo");
+      }),
+    openArcade: () => whenInside(() => setArcadeOpen(true)),
+    github,
+  };
+
   // estado inicial das camadas escondidas
   useEffect(() => {
     gsap.set([hostRef.current, voidRef.current, insideRef.current], { autoAlpha: 0 });
     bootstrapVisitLog();
   }, []);
 
-  // atalhos: a tecla do console (~), digitar "noclip", Konami code e Esc para voltar
+  // atalhos: ~ abre o console, digitar "noclip", Konami code e Esc para voltar
   useEffect(() => {
     let buffer = "";
     let konami = 0;
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      const target = e.target as HTMLElement | null;
-      if (target?.closest("input, textarea, [contenteditable=true]")) return;
+      const target = e.target;
+      if (target instanceof Element && target.closest("input, textarea, [contenteditable=true]")) return;
+      if (document.querySelector("[data-arcade-open]")) return;
 
       const key = e.key.toLowerCase();
       konami = key === KONAMI[konami] ? konami + 1 : key === KONAMI[0] ? 1 : 0;
@@ -125,7 +192,7 @@ function Stage() {
         (e.key === "Dead" && e.code === "Quote" && e.shiftKey === false);
       if (tilde) {
         e.preventDefault();
-        toggle("key ~");
+        setConsoleOpen((o) => !o);
         return;
       }
       if (e.key === "Escape" && modeRef.current === "inside") {
@@ -145,13 +212,14 @@ function Stage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [toggle, exit]);
 
-  // a dica no console — e `noclip` funciona digitado lá também
+  // a dica no console do navegador — e `noclip` funciona digitado lá também
   useEffect(() => {
     console.log(
-      "%c▚ pdrflp%c\n\nalgo neste mapa não foi renderizado direito.\nsomething on this map didn't render right.\n\n%c> noclip",
+      "%c▚ pdrflp%c\n\nalgo neste mapa não foi renderizado direito.\nsomething on this map didn't render right.\n\n%c> noclip%c   (ou aperte ~ na página / or press ~ on the page)",
       "font: 600 14px ui-monospace, monospace; color:#ff00dc; background:#000; padding:4px 8px",
       "font: 12px ui-monospace, monospace; color:#8b949e",
       "font: 600 12px ui-monospace, monospace; color:#6e9ead",
+      "font: 12px ui-monospace, monospace; color:#8b949e",
     );
     try {
       Object.defineProperty(window, "noclip", {
@@ -169,6 +237,9 @@ function Stage() {
     };
   }, [toggle]);
 
+  const closeConsole = useCallback(() => setConsoleOpen(false), []);
+  const closeArcade = useCallback(() => setArcadeOpen(false), []);
+
   return (
     <>
       <Surface ref={surfaceRef} onNoclip={enter} hidden={mode !== "surface"} />
@@ -180,8 +251,19 @@ function Stage() {
         ref={insideRef}
         active={mode === "inside" || mode === "entering"}
         trace={trace}
+        github={github}
+        selected={selected}
+        focus={focus}
+        onSelect={selectService}
+        onCloseDrawer={() => setSelected(null)}
         onExit={() => exit("button")}
+        onConsole={() => setConsoleOpen(true)}
+        onPlay={() => setArcadeOpen(true)}
+        modalOpen={arcadeOpen}
       />
+      {(arcadeOpen || mode === "inside") && <Arcade open={arcadeOpen && mode === "inside"} onClose={closeArcade} />}
+      <Console open={consoleOpen} onClose={closeConsole} api={consoleApi} />
+      <AchievementToasts />
       <p className="sr-only" aria-live="polite">
         {mode === "inside" ? (lang === "pt" ? "Painel do sistema aberto" : "System view open") : ""}
       </p>

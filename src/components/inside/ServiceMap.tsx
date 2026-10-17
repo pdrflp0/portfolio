@@ -6,6 +6,8 @@ import { PROJECTS, type ProjectId } from "@/content/site";
 import { SERVICES, type ServiceMeta } from "@/content/services";
 import { useLang } from "@/lib/i18n";
 import { useVisitLog } from "@/lib/visit-log";
+import type { GitHubSnapshot } from "@/lib/github";
+import { RelTime } from "@/components/RelTime";
 
 // coordenadas no viewBox 1000×560 (o container mantém essa proporção)
 const W = 1000;
@@ -36,7 +38,15 @@ const STATUS_COLOR: Record<ServiceMeta["status"], string> = {
   arcade: "missing-texture",
 };
 
-export function ServiceMap({ active, onSelect }: { active: boolean; onSelect: (id: ProjectId) => void }) {
+export function ServiceMap({
+  active,
+  github,
+  onSelect,
+}: {
+  active: boolean;
+  github: GitHubSnapshot | null;
+  onSelect: (id: ProjectId) => void;
+}) {
   const { lang } = useLang();
   const log = useVisitLog();
   const svgRef = useRef<SVGSVGElement>(null);
@@ -160,7 +170,10 @@ export function ServiceMap({ active, onSelect }: { active: boolean; onSelect: (i
               }}
             >
               <span className="flex items-center justify-between gap-2">
-                <span className="truncate text-[12px] text-obs-text">{s.svc}</span>
+                <span className="truncate text-[12px] text-obs-text">
+                  {s.svc}
+                  {github?.repos[s.id]?.ci?.conclusion === "success" && <span className="ml-1.5 text-[10px] text-ok">ci ✓</span>}
+                </span>
                 <span className={`size-1.5 shrink-0 ${s.status === "healthy" ? "rounded-full" : ""} ${STATUS_COLOR[s.status]}`} aria-hidden />
               </span>
               <span className="mt-0.5 truncate text-[10px] text-obs-dim">{proj.stack.slice(0, 3).join(" · ")}</span>
@@ -177,10 +190,13 @@ export function ServiceMap({ active, onSelect }: { active: boolean; onSelect: (i
                   ref={(el) => {
                     eventRefs.current[s.id] = el;
                   }}
-                  className="truncate text-obs-teal"
+                  className="min-w-0 flex-1 truncate text-obs-teal"
                 >
                   {s.events[0]}
                 </span>
+                {github?.repos[s.id] && (
+                  <RelTime iso={github.repos[s.id]!.pushedAt} className="shrink-0 text-obs-dim" />
+                )}
               </span>
             </button>
           );
