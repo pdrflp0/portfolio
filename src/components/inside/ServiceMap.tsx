@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { PROJECTS, type ProjectId } from "@/content/site";
 import { SERVICES, type ServiceMeta } from "@/content/services";
@@ -9,28 +9,42 @@ import { useVisitLog } from "@/lib/visit-log";
 import type { GitHubSnapshot } from "@/lib/github";
 import { RelTime } from "@/components/RelTime";
 
-// coordenadas no viewBox 1000×560 (o container mantém essa proporção)
+// coordenadas num viewBox 1000×H (o container mantém essa proporção). A altura do
+// cartão não encolhe com a largura (o texto tem tamanho fixo), então em painéis
+// estreitos o mapa fica mais alto para os cartões não se sobreporem.
 const W = 1000;
-const H = 560;
 const NODE_W = 230;
-const GATEWAY = { x: 500, y: 280 };
-const POS: Record<ProjectId, { x: number; y: number }> = {
-  residuo: { x: 160, y: 100 },
-  wagering: { x: 160, y: 280 },
-  "minha-cidade": { x: 160, y: 460 },
-  eletra: { x: 840, y: 100 },
-  email: { x: 840, y: 280 },
-  "space-invaders": { x: 840, y: 460 },
+const WIDE_H = 560;
+const NARROW_H = 760;
+const NARROW_BELOW = 840; // px de largura do container
+const GATEWAY_X = 500;
+const POS: Record<ProjectId, { x: number; row: number }> = {
+  residuo: { x: 160, row: 0 },
+  wagering: { x: 160, row: 1 },
+  "minha-cidade": { x: 160, row: 2 },
+  eletra: { x: 840, row: 0 },
+  email: { x: 840, row: 1 },
+  "space-invaders": { x: 840, row: 2 },
 };
+// linhas em 100/560, 280/560 e 460/560 da altura
+const rowY = (row: number, h: number) => (h * (100 + row * 180)) / 560;
 
-function edgePath(id: ProjectId) {
+function edgePath(id: ProjectId, h: number) {
   const p = POS[id];
-  const left = p.x < GATEWAY.x;
-  const sx = GATEWAY.x + (left ? -78 : 78);
+  const y = rowY(p.row, h);
+  const gy = h / 2;
+  const left = p.x < GATEWAY_X;
+  const sx = GATEWAY_X + (left ? -78 : 78);
   const ex = p.x + (left ? NODE_W / 2 : -NODE_W / 2);
   const mx = (sx + ex) / 2;
-  return `M${sx},${GATEWAY.y} C${mx},${GATEWAY.y} ${mx},${p.y} ${ex},${p.y}`;
+  return `M${sx},${gy} C${mx},${gy} ${mx},${y} ${ex},${y}`;
 }
+
+const STATUS_LABEL: Record<ServiceMeta["status"], { pt: string; en: string }> = {
+  healthy: { pt: "no ar, abrir estudo de caso", en: "healthy, open case study" },
+  idle: { pt: "parado, abrir estudo de caso", en: "idle, open case study" },
+  arcade: { pt: "arcade, abrir estudo de caso", en: "arcade, open case study" },
+};
 
 const STATUS_COLOR: Record<ServiceMeta["status"], string> = {
   healthy: "bg-ok",
@@ -50,9 +64,21 @@ export function ServiceMap({
   const { lang } = useLang();
   const log = useVisitLog();
   const svgRef = useRef<SVGSVGElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [H, setH] = useState(WIDE_H);
   const nodeRefs = useRef<Partial<Record<ProjectId, HTMLElement | null>>>({});
   const eventRefs = useRef<Partial<Record<ProjectId, HTMLElement | null>>>({});
   const requests = log.filter((e) => e.kind === "request").length;
+
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setH(entry.contentRect.width < NARROW_BELOW ? NARROW_H : WIDE_H);
+    });
+    ro.observe(box);
+    return () => ro.disconnect();
+  }, []);
 
   // pacotes de eventos viajando do gateway para os serviços
   useEffect(() => {
@@ -117,7 +143,7 @@ export function ServiceMap({
   return (
     <>
       {/* desktop/tablet: topologia */}
-      <div className="relative mx-auto hidden aspect-[1000/560] w-full max-w-[1000px] sm:block">
+      <div ref={boxRef} className="relative mx-auto hidden w-full max-w-[1000px] sm:block" style={{ aspectRatio: `${W} / ${H}` }}>
         <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 size-full" aria-hidden>
           <defs>
             <pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse">
@@ -129,7 +155,7 @@ export function ServiceMap({
             <path
               key={s.id}
               data-edge={s.id}
-              d={edgePath(s.id)}
+              d={edgePath(s.id, H)}
               fill="none"
               className={s.status === "healthy" ? "stroke-obs-teal/40" : "stroke-obs-line"}
               strokeWidth="1.25"
@@ -141,7 +167,7 @@ export function ServiceMap({
         {/* gateway = este site, recebendo a visita */}
         <div
           className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center border border-obs-teal/50 bg-obs-2 text-center"
-          style={{ left: `${(GATEWAY.x / W) * 100}%`, top: `${(GATEWAY.y / H) * 100}%`, width: `${(156 / W) * 100}%`, height: `${(110 / H) * 100}%` }}
+          style={{ left: `${(GATEWAY_X / W) * 100}%`, top: "50%", width: `${(156 / W) * 100}%`, height: `${(110 / H) * 100}%` }}
         >
           <span className="text-[10px] uppercase tracking-[0.14em] text-obs-dim">gateway</span>
           <span className="mt-1 text-[12px] text-obs-text">pdrflp.edge</span>
@@ -161,11 +187,11 @@ export function ServiceMap({
                 nodeRefs.current[s.id] = el;
               }}
               onClick={() => onSelect(s.id)}
-              aria-label={`${proj.name[lang]} — ${s.status}`}
+              aria-label={`${proj.name[lang]} — ${STATUS_LABEL[s.status][lang]}`}
               className="service-node group absolute flex -translate-x-1/2 -translate-y-1/2 flex-col border bg-obs-2 p-[1.1%] text-left transition-colors hover:border-obs-teal focus-visible:border-obs-teal"
               style={{
                 left: `${(p.x / W) * 100}%`,
-                top: `${(p.y / H) * 100}%`,
+                top: `${(rowY(p.row, H) / H) * 100}%`,
                 width: `${(NODE_W / W) * 100}%`,
               }}
             >
@@ -207,7 +233,7 @@ export function ServiceMap({
       <ul className="divide-y divide-obs-line sm:hidden">
         {SERVICES.map((s) => (
           <li key={s.id}>
-            <button type="button" onClick={() => onSelect(s.id)} aria-label={`${projectOf(s.id).name[lang]} — ${s.status}`} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
+            <button type="button" onClick={() => onSelect(s.id)} aria-label={`${projectOf(s.id).name[lang]} — ${STATUS_LABEL[s.status][lang]}`} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
               <span className={`size-1.5 shrink-0 ${s.status === "healthy" ? "rounded-full" : ""} ${STATUS_COLOR[s.status]}`} aria-hidden />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[13px]">{s.svc}</span>
