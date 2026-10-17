@@ -53,6 +53,7 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
   const [focus, setFocus] = useState<"demo" | null>(null);
   const [consoleOpen, setConsoleOpen] = useState(false);
   const [arcadeOpen, setArcadeOpen] = useState(false);
+  const [fromGithub, setFromGithub] = useState(false);
   const modeRef = useRef<Mode>("surface");
   const scrollRef = useRef(0);
   const originRef = useRef<NoclipOrigin | undefined>(undefined);
@@ -197,6 +198,19 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // veio pelo portal do README do GitHub (?from=github): entrada especial e conquista
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("from") !== "github") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- a origem só é conhecida no cliente
+    setFromGithub(true);
+    unlock("interdimensional");
+    logEvent({ kind: "event", label: "player joined from github.com/pdrflp0" });
+    params.delete("from");
+    const rest = params.toString();
+    window.history.replaceState(window.history.state, "", window.location.pathname + (rest ? `?${rest}` : "") + window.location.hash);
+  }, []);
+
   // saindo para outra página (ex.: o diário de bugs) com o painel aberto, a página de destino precisa rolar
   useEffect(() => () => document.documentElement.classList.remove("noclip-active"), []);
 
@@ -284,7 +298,7 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
 
   return (
     <>
-      <Surface ref={surfaceRef} onNoclip={enter} hidden={mode !== "surface"} />
+      <Surface ref={surfaceRef} onNoclip={enter} hidden={mode !== "surface"} fromGithub={fromGithub} />
       <div ref={voidRef} className="fixed inset-0 z-40 overflow-hidden bg-obs-0" aria-hidden>
         <VoidLayer />
       </div>

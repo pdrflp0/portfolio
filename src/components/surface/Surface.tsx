@@ -19,9 +19,10 @@ export type NoclipHandler = (origin?: NoclipOrigin, via?: string) => void;
 type Props = {
   onNoclip: NoclipHandler;
   hidden: boolean;
+  fromGithub?: boolean;
 };
 
-export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNoclip, hidden }, ref) {
+export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNoclip, hidden, fromGithub }, ref) {
   const { t, lang } = useLang();
   const rootRef = useRef<HTMLDivElement | null>(null);
 
@@ -148,7 +149,7 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
             </div>
 
             <div className="hero-in mx-auto w-full max-w-[540px] lg:mx-0 lg:justify-self-end" style={{ ["--d" as string]: "380ms" }}>
-              <HeroScene paused={hidden} onNoclip={onNoclip} />
+              <HeroScene paused={hidden} onNoclip={onNoclip} fromGithub={fromGithub} />
             </div>
           </div>
 

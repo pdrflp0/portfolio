@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { useLang } from "@/lib/i18n";
 import type { NoclipOrigin } from "./Surface";
@@ -52,9 +52,12 @@ const SEAM: V3 = [0.42, 2.5, 0];
 export function HeroScene({
   onNoclip,
   paused,
+  fromGithub = false,
 }: {
   onNoclip: (o: NoclipOrigin, via: "player" | "seam") => void;
   paused: boolean;
+  /** chegou pelo link do GitHub: o jogador entra caindo pelo portal */
+  fromGithub?: boolean;
 }) {
   const { t } = useLang();
   const playerRef = useRef<SVGGElement>(null);
@@ -69,6 +72,17 @@ export function HeroScene({
   const pausedRef = useRef(paused);
   // a cena só começa a andar depois do carregamento, para não disputar a thread principal
   const readyRef = useRef(false);
+  const fromGithubRef = useRef(fromGithub);
+  const portalRef = useRef<SVGPolygonElement>(null);
+  const introRef = useRef<((done: () => void) => void) | null>(null);
+  // mensagem da legenda: a ponte entre o portfólio e o GitHub
+  const [hud, setHud] = useState<"joined" | "left" | null>(null);
+
+  useEffect(() => {
+    fromGithubRef.current = fromGithub;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- a chegada só é conhecida no cliente
+    if (fromGithub) setHud("joined");
+  }, [fromGithub]);
 
   const sync = useCallback(() => {
     const tl = tlRef.current;
@@ -181,7 +195,12 @@ export function HeroScene({
     tl.call(() => setState("idle"))
       .set(s, { vel: 0 })
       .to(s, { z: -4.5, duration: 0.75, ease: "power2.in" })
-      .to(s, { o: 0, duration: 0.25 }, "<0.5");
+      .to(s, { o: 0, duration: 0.25 }, "<0.5")
+      // saiu do mapa: a legenda aponta para a outra dimensão
+      .call(() => {
+        setHud("left");
+        gsap.delayedCall(3.4, () => setHud((h) => (h === "left" ? null : h)));
+      });
     // 5. respawn no PC
     tl.set(s, { x: DESK[0], y: DESK[1], z: 0 })
       .call(() => {
@@ -197,6 +216,28 @@ export function HeroScene({
       })
       .to(s, { o: 1, duration: 0.4, ease: "steps(5)" });
 
+    // entrada pelo portal: cai do alto até o PC antes da rotina começar
+    introRef.current = (done) => {
+      const portal = portalRef.current;
+      s.z = 5.5;
+      s.o = 0;
+      apply();
+      const intro = gsap.timeline({ onUpdate: apply, onComplete: done });
+      intro
+        .call(() => setState("idle"))
+        .fromTo(portal, { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "steps(4)" })
+        .set(s, { o: 1 })
+        .to(s, { z: 0, duration: 0.85, ease: "power2.in" })
+        .call(() => {
+          const [cx, cy] = P(DESK[0], DESK[1]);
+          gsap.set(ring, { attr: { cx, cy } });
+          gsap.fromTo(ring, { attr: { rx: 2, ry: 1 }, opacity: 0.9 }, { attr: { rx: 30, ry: 15 }, opacity: 0, duration: 0.8, ease: "expo.out" });
+        })
+        .to(portal, { opacity: 0, duration: 0.4, ease: "steps(4)" }, "<0.1")
+        .to({}, { duration: 0.6 });
+      gsap.delayedCall(5, () => setHud((h) => (h === "joined" ? null : h)));
+    };
+
     tlRef.current = tl;
     sync();
     return () => {
@@ -209,8 +250,12 @@ export function HeroScene({
 
   useEffect(() => {
     const start = () => {
-      readyRef.current = true;
-      sync();
+      const go = () => {
+        readyRef.current = true;
+        sync();
+      };
+      if (fromGithubRef.current && introRef.current) introRef.current(go);
+      else go();
     };
     let id: ReturnType<typeof setTimeout>;
     const later = () => (id = setTimeout(start, 600));
@@ -349,6 +394,14 @@ export function HeroScene({
 
         {/* anel de respawn */}
         <ellipse ref={ringRef} className="scene-ring" cx={P(...DESK)[0]} cy={P(...DESK)[1]} rx="0" ry="0" />
+        {/* o portal de quem chega do GitHub, aberto no ar acima do PC */}
+        <polygon
+          ref={portalRef}
+          points={pts([3.85, 1.3, 4.3], [4.95, 1.3, 4.3], [4.95, 2.4, 4.3], [3.85, 2.4, 4.3])}
+          fill="url(#mt)"
+          opacity="0"
+          aria-hidden
+        />
 
         {/* o jogador */}
         <g
@@ -430,7 +483,19 @@ export function HeroScene({
       </dl>
 
       <p id="scene-caption" className="mt-3 flex justify-between gap-4 font-mono text-[11px] text-ink-3">
-        <span>{t.hero.scene.caption}</span>
+        {hud ? (
+          <a
+            href="https://github.com/pdrflp0"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-2 text-rust underline decoration-rust/30 underline-offset-4 hover:decoration-rust"
+          >
+            <span className="missing-texture inline-block size-2 shrink-0" aria-hidden />
+            {hud === "joined" ? t.hero.scene.joined : t.hero.scene.left}
+          </a>
+        ) : (
+          <span>{t.hero.scene.caption}</span>
+        )}
         <span aria-hidden className="hidden shrink-0 sm:inline">cl_showpos 1</span>
       </p>
     </div>

@@ -154,7 +154,7 @@ export type Dict = {
     ctaWork: string;
     ctaContact: string;
     meta: { label: string; value: string }[];
-    scene: { caption: string; player: string; seam: string };
+    scene: { caption: string; player: string; seam: string; joined: string; left: string };
   };
   about: {
     title: string;
@@ -223,6 +223,8 @@ export const DICT: Record<Lang, Dict> = {
         caption: "fig. 1 — o que o mapa não devia mostrar",
         player: "jogador fora dos limites do mapa",
         seam: "textura com defeito na parede",
+        joined: "jogador chegou de github.com/pdrflp0",
+        left: "jogador saiu do mapa → github.com/pdrflp0",
       },
     },
     about: {
@@ -353,6 +355,8 @@ export const DICT: Record<Lang, Dict> = {
         caption: "fig. 1 — what the map wasn't meant to show",
         player: "player outside the map bounds",
         seam: "broken texture on the wall",
+        joined: "player joined from github.com/pdrflp0",
+        left: "player left the map → github.com/pdrflp0",
       },
     },
     about: {

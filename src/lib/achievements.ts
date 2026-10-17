@@ -20,6 +20,7 @@ export type AchievementId =
   | "invaders"
   | "case-studies"
   | "postmortem"
+  | "interdimensional"
   | "cv";
 
 export type Achievement = { id: AchievementId; title: L; desc: L; icon: string[] };
@@ -218,6 +219,21 @@ export const ACHIEVEMENTS: Achievement[] = [
       "#.####.#",
       "#......#",
       "#.###..#",
+      "########",
+    ],
+  },
+  {
+    id: "interdimensional",
+    title: { pt: "Interdimensional", en: "Interdimensional" },
+    desc: { pt: "Chegou do GitHub pelo portal.", en: "Came in from GitHub through the portal." },
+    icon: [
+      "########",
+      "#......#",
+      "#.####.#",
+      "#.#..#.#",
+      "#.#..#.#",
+      "#.####.#",
+      "#......#",
       "########",
     ],
   },
