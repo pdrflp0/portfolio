@@ -117,8 +117,8 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
                 aria-label="Pedro Felipe"
                 className="mt-7 font-display text-[clamp(3.8rem,15vw,9.6rem)] leading-[0.86] tracking-[-0.035em] lg:text-[clamp(5rem,9.6vw,9.6rem)]"
               >
-                <span className="hero-in block" style={{ ["--d" as string]: "80ms" }}>Pedro</span>
-                <span className="hero-in block whitespace-nowrap" style={{ ["--d" as string]: "160ms" }}>
+                <span className="name-in block" style={{ ["--d" as string]: "0ms" }}>Pedro</span>
+                <span className="name-in block whitespace-nowrap" style={{ ["--d" as string]: "70ms" }}>
                   Felipe
                   <GlitchDot label={t.noclip.hint} onActivate={(o) => onNoclip(o, "glitch")} />
                 </span>
@@ -377,7 +377,7 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
         </section>
       </main>
 
-      <footer className="bg-ink text-paper/40">
+      <footer className="bg-ink text-paper/60">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 border-t border-paper/10 px-5 py-6 font-mono text-[11px] sm:px-8">
           <span>© Pedro Felipe de Oliveira · {t.footer}</span>
           <CheatsToggle onActivate={(o) => onNoclip(o, "sv_cheats")} />
@@ -406,7 +406,7 @@ function CheatsToggle({ onActivate }: { onActivate: (o: NoclipOrigin) => void })
           setTimeout(() => setOn(false), 1500);
         }, 650);
       }}
-      className={`transition-colors ${on ? "text-[#ff4fd8]" : "text-paper/25 hover:text-paper/60"}`}
+      className={`transition-colors ${on ? "text-[#ff4fd8]" : "text-paper/50 hover:text-paper/80"}`}
     >
       sv_cheats {on ? 1 : 0}
     </button>

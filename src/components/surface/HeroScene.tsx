@@ -67,11 +67,13 @@ export function HeroScene({
   const hoverRef = useRef(false);
   const visibleRef = useRef(true);
   const pausedRef = useRef(paused);
+  // a cena só começa a andar depois do carregamento, para não disputar a thread principal
+  const readyRef = useRef(false);
 
   const sync = useCallback(() => {
     const tl = tlRef.current;
     if (!tl) return;
-    const shouldRun = visibleRef.current && !pausedRef.current && !hoverRef.current;
+    const shouldRun = readyRef.current && visibleRef.current && !pausedRef.current && !hoverRef.current;
     tl.paused(!shouldRun);
   }, []);
 
@@ -202,6 +204,21 @@ export function HeroScene({
       gsap.ticker.remove(fpsTick);
       clearInterval(hudTimer);
       tlRef.current = null;
+    };
+  }, [sync]);
+
+  useEffect(() => {
+    const start = () => {
+      readyRef.current = true;
+      sync();
+    };
+    let id: ReturnType<typeof setTimeout>;
+    const later = () => (id = setTimeout(start, 600));
+    if (document.readyState === "complete") later();
+    else window.addEventListener("load", later, { once: true });
+    return () => {
+      clearTimeout(id);
+      window.removeEventListener("load", later);
     };
   }, [sync]);
 

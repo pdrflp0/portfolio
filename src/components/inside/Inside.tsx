@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { LINKS, type ProjectId } from "@/content/site";
 import { SERVICES } from "@/content/services";
 import { useLang } from "@/lib/i18n";
@@ -9,12 +10,26 @@ import { ACHIEVEMENTS, unlock, useUnlocked } from "@/lib/achievements";
 import type { GitHubSnapshot } from "@/lib/github";
 import { LangToggle } from "@/components/LangToggle";
 import { RelTime } from "@/components/RelTime";
-import { AchievementsPanel } from "@/components/achievements/Achievements";
-import { ServiceMap } from "./ServiceMap";
-import { TracePanel } from "./TracePanel";
-import { SpeedrunPanel } from "./Speedrun";
-import { VisitLog } from "./VisitLog";
-import { ServiceDrawer } from "./ServiceDrawer";
+
+/*
+ * O conteúdo do lado de dentro só é baixado e montado depois da primeira travessia:
+ * quem fica na superfície (a maioria dos recrutadores) não paga por ele. Os chunks
+ * são pré-carregados quando o navegador fica ocioso, então chegam antes do boot.
+ */
+const loadMap = () => import("./ServiceMap");
+const loadTrace = () => import("./TracePanel");
+const loadSpeedrun = () => import("./Speedrun");
+const loadVisitLog = () => import("./VisitLog");
+const loadDrawer = () => import("./ServiceDrawer");
+const loadAchievements = () => import("@/components/achievements/Achievements");
+
+const Skeleton = ({ h }: { h: string }) => <div className={`${h} animate-pulse bg-obs-2/40`} aria-hidden />;
+const ServiceMap = dynamic(() => loadMap().then((m) => m.ServiceMap), { ssr: false, loading: () => <Skeleton h="h-[420px]" /> });
+const TracePanel = dynamic(() => loadTrace().then((m) => m.TracePanel), { ssr: false, loading: () => <Skeleton h="h-64" /> });
+const SpeedrunPanel = dynamic(() => loadSpeedrun().then((m) => m.SpeedrunPanel), { ssr: false, loading: () => <Skeleton h="h-64" /> });
+const VisitLog = dynamic(() => loadVisitLog().then((m) => m.VisitLog), { ssr: false, loading: () => <Skeleton h="h-full" /> });
+const ServiceDrawer = dynamic(() => loadDrawer().then((m) => m.ServiceDrawer), { ssr: false });
+const AchievementsPanel = dynamic(() => loadAchievements().then((m) => m.AchievementsPanel), { ssr: false, loading: () => <Skeleton h="h-64" /> });
 
 type Props = {
   active: boolean;
@@ -38,6 +53,22 @@ export const Inside = forwardRef<HTMLDivElement, Props>(function Inside(
   const blocked = selected !== null || modalOpen;
   const { t, lang } = useLang();
   const unlocked = useUnlocked();
+  // monta o conteúdo na primeira vez que o painel é ativado e mantém montado depois
+  const [booted, setBooted] = useState(false);
+  if (active && !booted) setBooted(true);
+
+  useEffect(() => {
+    const prefetch = () => {
+      for (const load of [loadMap, loadTrace, loadSpeedrun, loadVisitLog, loadDrawer, loadAchievements]) load().catch(() => {});
+    };
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
+    if (w.requestIdleCallback) {
+      const id = w.requestIdleCallback(prefetch, { timeout: 4000 });
+      return () => window.cancelIdleCallback?.(id);
+    }
+    const id = setTimeout(prefetch, 2500);
+    return () => clearTimeout(id);
+  }, []);
   const pt = lang === "pt";
 
   return (
@@ -101,28 +132,28 @@ export const Inside = forwardRef<HTMLDivElement, Props>(function Inside(
       <main inert={blocked || undefined} className="relative mx-auto grid max-w-[1400px] grid-cols-1 gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="grid min-w-0 grid-cols-1 gap-4">
           <Panel title={pt ? "topologia · serviços" : "topology · services"} meta={pt ? "clique num serviço" : "click a service"}>
-            <ServiceMap active={active} github={github} onSelect={onSelect} />
+            {booted && <ServiceMap active={active} github={github} onSelect={onSelect} />}
           </Panel>
 
           <Panel title="env | grep PEDRO" meta="whoami">
-            <EnvBlock />
+            {booted && <EnvBlock />}
           </Panel>
 
           <Panel title="trace" meta={pt ? "cascata desta visita" : "this visit, as a waterfall"}>
-            <TracePanel />
+            {booted && <TracePanel />}
           </Panel>
 
           <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2">
             <Panel title="speedrun" meta="LiveSplit">
-              <SpeedrunPanel active={active} />
+              {booted && <SpeedrunPanel active={active} />}
             </Panel>
             <Panel title="achievements" meta={pt ? "segredos deste mapa" : "secrets on this map"}>
-              <AchievementsPanel />
+              {booted && <AchievementsPanel />}
             </Panel>
           </div>
 
           <Panel title="deploys" meta={github ? "github" : "offline"}>
-            <Deploys github={github} onSelect={onSelect} />
+            {booted && <Deploys github={github} onSelect={onSelect} />}
           </Panel>
         </div>
 
@@ -132,13 +163,13 @@ export const Inside = forwardRef<HTMLDivElement, Props>(function Inside(
             meta={pt ? "esta visita, ao vivo" : "this visit, live"}
             className="h-[420px] lg:h-full"
           >
-            <VisitLog trace={trace} />
+            {booted && <VisitLog trace={trace} />}
           </Panel>
         </div>
       </main>
 
       <div inert={modalOpen || undefined} className="contents">
-        <ServiceDrawer id={selected} focus={focus} github={github} onClose={onCloseDrawer} onPlay={onPlay} />
+        {booted && <ServiceDrawer id={selected} focus={focus} github={github} onClose={onCloseDrawer} onPlay={onPlay} />}
       </div>
     </div>
   );

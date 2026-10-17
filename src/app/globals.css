@@ -6,7 +6,7 @@
   --paper-2: #e9e5da;
   --ink: #15171b;
   --ink-2: #4a4e57;
-  --ink-3: #6f737c;
+  --ink-3: #5f636b;
   --line: rgb(21 23 27 / 0.12);
   --rust: #9a5640;
   --teal: #3f6f7e;
@@ -181,12 +181,24 @@ html.noclip-active body {
 
 /* ——— superfície: entrada e revelação ——— */
 @keyframes hero-in {
-  from { opacity: 0; transform: translateY(18px); filter: blur(6px); }
-  to { opacity: 1; transform: none; filter: none; }
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
 }
 
 .hero-in {
   animation: hero-in 1.1s var(--ease-out) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* o nome já nasce pintado (sem opacity 0 nem blur): é o maior elemento da página e
+   não pode esperar a animação para contar como carregado */
+@keyframes name-in {
+  from { opacity: 0.12; transform: translateY(0.12em); }
+  to { opacity: 1; transform: none; }
+}
+
+.name-in {
+  animation: name-in 0.9s var(--ease-out) both;
   animation-delay: var(--d, 0ms);
 }
 
@@ -213,7 +225,8 @@ html.noclip-active body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-in { animation: none; }
+  .hero-in,
+  .name-in { animation: none; }
   [data-reveal="on"] .reveal > * { opacity: 1; transform: none; transition: none; }
 }
 

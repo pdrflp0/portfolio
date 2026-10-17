@@ -5,17 +5,18 @@ import gsap from "gsap";
 import { ACHIEVEMENTS, dismissToast, useToasts, useUnlocked, type Achievement } from "@/lib/achievements";
 import { useLang } from "@/lib/i18n";
 
+/** Os pixels acesos viram um único path (um elemento por ícone, não 64). */
+function pixelPath(rows: string[]) {
+  let d = "";
+  rows.forEach((row, y) => [...row].forEach((c, x) => c === "#" && (d += `M${x} ${y}h1v1h-1z`)));
+  return d;
+}
+
 export function PixelIcon({ rows, size = 32, on = true }: { rows: string[]; size?: number; on?: boolean }) {
   return (
     <svg width={size} height={size} viewBox="0 0 8 8" shapeRendering="crispEdges" aria-hidden className="shrink-0">
       <rect width="8" height="8" className={on ? "fill-[#16141a]" : "fill-obs-2"} />
-      {rows.flatMap((row, y) =>
-        [...row].map((c, x) =>
-          c === "#" ? (
-            <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" className={on ? "fill-[#ff4fd8]" : "fill-obs-line"} />
-          ) : null,
-        ),
-      )}
+      <path d={pixelPath(rows)} className={on ? "fill-[#ff4fd8]" : "fill-obs-line"} />
     </svg>
   );
 }
