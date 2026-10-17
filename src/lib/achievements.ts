@@ -19,6 +19,7 @@ export type AchievementId =
   | "tombstone"
   | "invaders"
   | "case-studies"
+  | "postmortem"
   | "cv";
 
 export type Achievement = { id: AchievementId; title: L; desc: L; icon: string[] };
@@ -206,6 +207,21 @@ export const ACHIEVEMENTS: Achievement[] = [
     ],
   },
   {
+    id: "postmortem",
+    title: { pt: "Post-mortem", en: "Post-mortem" },
+    desc: { pt: "Leu um post-mortem do diário de bugs até o fim.", en: "Read a bug journal post-mortem to the end." },
+    icon: [
+      "#######.",
+      "#.....##",
+      "#.###..#",
+      "#......#",
+      "#.####.#",
+      "#......#",
+      "#.###..#",
+      "########",
+    ],
+  },
+  {
     id: "cv",
     title: { pt: "RH aprovou", en: "HR approved" },
     desc: { pt: "Baixou o currículo.", en: "Downloaded the résumé." },
@@ -243,6 +259,7 @@ function load() {
 export function unlock(id: AchievementId) {
   if (typeof window === "undefined") return;
   load();
+  recordSplit(id);
   if (unlocked.includes(id)) return;
   unlocked = [...unlocked, id];
   try {
@@ -289,4 +306,81 @@ const openedCases = new Set<string>();
 export function trackCaseStudy(id: string) {
   openedCases.add(id);
   if (["residuo", "wagering", "minha-cidade"].every((c) => openedCases.has(c))) unlock("case-studies");
+}
+
+/* ——— speedrun: cada visita é uma tentativa, cada conquista é um split ——— */
+
+export type Split = { id: AchievementId; t: number };
+export type Records = {
+  attempts: number;
+  bestAny: number | null;
+  best: Partial<Record<AchievementId, number>>;
+};
+
+const RUN_KEY = "pf.speedrun";
+let splits: Split[] = [];
+let records: Records = { attempts: 0, bestAny: null, best: {} };
+/** recordes como estavam no início desta tentativa — base para os deltas */
+let previous: Records = records;
+let runStarted = false;
+let runSnapshot = { splits, records, previous };
+
+function saveRecords() {
+  try {
+    localStorage.setItem(RUN_KEY, JSON.stringify(records));
+  } catch {}
+}
+
+function snapshot() {
+  runSnapshot = { splits, records, previous };
+}
+
+/** Começa a tentativa desta visita (uma vez por carregamento de página). */
+export function startRun() {
+  if (runStarted || typeof window === "undefined") return;
+  runStarted = true;
+  try {
+    const raw = JSON.parse(localStorage.getItem(RUN_KEY) ?? "null");
+    if (raw && typeof raw === "object") {
+      records = {
+        attempts: Number(raw.attempts) || 0,
+        bestAny: typeof raw.bestAny === "number" ? raw.bestAny : null,
+        best: raw.best && typeof raw.best === "object" ? raw.best : {},
+      };
+    }
+  } catch {}
+  previous = { ...records, best: { ...records.best } };
+  records = { ...records, attempts: records.attempts + 1 };
+  saveRecords();
+  snapshot();
+  emit();
+}
+
+function recordSplit(id: AchievementId) {
+  startRun();
+  if (splits.some((sp) => sp.id === id)) return;
+  const t = performance.now();
+  splits = [...splits, { id, t }];
+  const best = records.best[id];
+  records = {
+    ...records,
+    best: { ...records.best, [id]: best === undefined ? t : Math.min(best, t) },
+    bestAny: id === "noclip" ? (records.bestAny === null ? t : Math.min(records.bestAny, t)) : records.bestAny,
+  };
+  saveRecords();
+  snapshot();
+  emit();
+}
+
+const EMPTY_RUN = { splits: [] as Split[], records: { attempts: 0, bestAny: null, best: {} } as Records, previous: { attempts: 0, bestAny: null, best: {} } as Records };
+
+export function useRun() {
+  return useSyncExternalStore(subscribe, () => runSnapshot, () => EMPTY_RUN);
+}
+
+export function fmtRunTime(ms: number) {
+  const total = Math.max(0, ms) / 1000;
+  const m = Math.floor(total / 60);
+  const s = total - m * 60;
+  return `${String(m).padStart(2, "0")}:${s.toFixed(3).padStart(6, "0")}`;
 }

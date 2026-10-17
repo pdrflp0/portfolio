@@ -1,6 +1,8 @@
 "use client";
 
 import { forwardRef, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { DIARY, POSTS, readingMinutes } from "@/content/bugs";
 import { LINKS, PROJECTS, SKILLS } from "@/content/site";
 import { useLang } from "@/lib/i18n";
 import { logEvent } from "@/lib/visit-log";
@@ -78,6 +80,7 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
           <nav aria-label={lang === "pt" ? "Principal" : "Main"} className="flex items-center gap-2.5 text-sm sm:gap-5">
             <ul className="hidden items-center gap-6 text-ink-2 md:flex">
               <li><a className="link-underline" href="#work">{t.nav.work}</a></li>
+              <li><Link className="link-underline" href={`/${lang}/bugs`}>{t.nav.journal}</Link></li>
               <li><a className="link-underline" href="#about">{t.nav.about}</a></li>
               <li><a className="link-underline" href="#experience">{t.nav.experience}</a></li>
               <li><a className="link-underline" href="#contact">{t.nav.contact}</a></li>
@@ -228,10 +231,36 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
           </div>
         </section>
 
+        {/* DIÁRIO DE BUGS */}
+        <section id="journal" data-reveal className="reveal scroll-mt-16 border-t border-line">
+          <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
+            <div className="flex flex-wrap items-end justify-between gap-6">
+              <SectionLabel index="02" title={DIARY[lang].title} />
+              <Link href={`/${lang}/bugs`} className="link-underline font-mono text-[12px] text-ink-2">
+                {DIARY[lang].all} →
+              </Link>
+            </div>
+            <p className="mt-6 max-w-xl text-lg leading-snug text-ink-2">{DIARY[lang].lead}</p>
+            <ul className="mt-10 grid gap-px overflow-hidden rounded-lg border border-line bg-line md:grid-cols-2">
+              {POSTS.map((post) => (
+                <li key={post.slug} className="bg-paper">
+                  <Link href={`/${lang}/bugs/${post.slug}`} className="group flex h-full flex-col p-6 transition-colors hover:bg-paper-2">
+                    <span className="font-mono text-[11px] text-ink-3">
+                      post-mortem · {readingMinutes(post, lang)} {DIARY[lang].readTime}
+                    </span>
+                    <span className="mt-3 font-display text-[1.75rem] leading-[1.1] tracking-tight group-hover:text-rust">{post.title[lang]}</span>
+                    <span className="mt-3 text-[0.95rem] leading-relaxed text-ink-2">{post.summary[lang]}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
         {/* SOBRE */}
         <section id="about" data-reveal className="reveal scroll-mt-16 border-t border-line">
           <div className="mx-auto grid max-w-6xl gap-10 px-5 py-20 sm:px-8 sm:py-28 md:grid-cols-[16rem_1fr]">
-            <SectionLabel index="02" title={t.about.title} />
+            <SectionLabel index="03" title={t.about.title} />
             <div className="max-w-2xl space-y-6 text-xl leading-[1.55] text-ink sm:text-[1.4rem]">
               <p>
                 {t.about.lead[0]}
@@ -248,7 +277,7 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
         {/* EXPERIÊNCIA + FORMAÇÃO + FERRAMENTAS */}
         <section id="experience" data-reveal className="reveal scroll-mt-16 border-t border-line">
           <div className="mx-auto grid max-w-6xl gap-10 px-5 py-20 sm:px-8 sm:py-28 md:grid-cols-[16rem_1fr]">
-            <SectionLabel index="03" title={t.experience.title} />
+            <SectionLabel index="04" title={t.experience.title} />
             <div>
               <article className="grid gap-4 sm:grid-cols-[1fr_auto]">
                 <div>
@@ -299,7 +328,7 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
         {/* CONTATO */}
         <section id="contact" data-reveal className="reveal scroll-mt-16 border-t border-line bg-ink text-paper">
           <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-paper/50">04 — {t.nav.contact}</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-paper/50">05 — {t.nav.contact}</p>
             <h2 className="mt-6 font-display text-[clamp(3rem,9vw,7rem)] leading-[0.92] tracking-[-0.03em]">
               {t.contact.title}
             </h2>

@@ -11,6 +11,8 @@ import { LangToggle } from "@/components/LangToggle";
 import { RelTime } from "@/components/RelTime";
 import { AchievementsPanel } from "@/components/achievements/Achievements";
 import { ServiceMap } from "./ServiceMap";
+import { TracePanel } from "./TracePanel";
+import { SpeedrunPanel } from "./Speedrun";
 import { VisitLog } from "./VisitLog";
 import { ServiceDrawer } from "./ServiceDrawer";
 
@@ -106,14 +108,22 @@ export const Inside = forwardRef<HTMLDivElement, Props>(function Inside(
             <EnvBlock />
           </Panel>
 
+          <Panel title="trace" meta={pt ? "cascata desta visita" : "this visit, as a waterfall"}>
+            <TracePanel />
+          </Panel>
+
           <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2">
+            <Panel title="speedrun" meta="LiveSplit">
+              <SpeedrunPanel active={active} />
+            </Panel>
             <Panel title="achievements" meta={pt ? "segredos deste mapa" : "secrets on this map"}>
               <AchievementsPanel />
             </Panel>
-            <Panel title="deploys" meta={github ? "github" : pt ? "offline" : "offline"}>
-              <Deploys github={github} onSelect={onSelect} />
-            </Panel>
           </div>
+
+          <Panel title="deploys" meta={github ? "github" : "offline"}>
+            <Deploys github={github} onSelect={onSelect} />
+          </Panel>
         </div>
 
         <div className="min-w-0 lg:sticky lg:top-[58px] lg:h-[calc(100dvh-74px)]">

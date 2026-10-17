@@ -1,40 +1,26 @@
 import { ImageResponse } from "next/og";
-import { cacheLife } from "next/cache";
+import { loadGoogleFont, ogFonts } from "@/lib/og-fonts";
 
-export const alt = "Pedro Felipe — Desenvolvedor back-end";
+export const alt = "Pedro Felipe — back-end";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+export function generateStaticParams() {
+  return [{ lang: "pt" }, { lang: "en" }];
+}
+
 const TITLE = "Pedro Felipe";
-const STATUS = "Buscando estágio ou vaga júnior · Fortaleza, CE";
 const ROLE = "Back-end · Java & TypeScript · PostgreSQL";
 const HANDLE = "github.com/pdrflp0";
 
-/** Busca só os glifos usados de uma fonte do Google Fonts; sem rede, cai na fonte padrão. */
-async function loadFont(family: string, text: string) {
-  "use cache";
-  cacheLife("max");
-  try {
-    const css = await fetch(
-      `https://fonts.googleapis.com/css2?family=${family}&text=${encodeURIComponent(text)}`,
-    ).then((r) => r.text());
-    const url = css.match(/src: url\((.+?)\) format\('(opentype|truetype)'\)/)?.[1];
-    if (!url) return null;
-    return await fetch(url).then((r) => r.arrayBuffer());
-  } catch {
-    return null;
-  }
-}
-
-export default async function Image() {
+export default async function Image({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
+  const STATUS = lang === "en" ? "Open to internships and junior roles · Fortaleza, Brazil" : "Buscando estágio ou vaga júnior · Fortaleza, CE";
   const [serif, sans] = await Promise.all([
-    loadFont("Instrument+Serif", TITLE),
-    loadFont("Geist", STATUS + ROLE + HANDLE),
+    loadGoogleFont("Instrument+Serif", TITLE),
+    loadGoogleFont("Geist", STATUS + ROLE + HANDLE),
   ]);
-  const fonts = [
-    ...(serif ? [{ name: "Instrument Serif", data: serif, style: "normal" as const, weight: 400 as const }] : []),
-    ...(sans ? [{ name: "Geist", data: sans, style: "normal" as const, weight: 400 as const }] : []),
-  ];
+  const fonts = ogFonts(serif, sans);
 
   return new ImageResponse(
     (

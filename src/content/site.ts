@@ -1,5 +1,8 @@
 export type Lang = "pt" | "en";
 
+export const LANGS: Lang[] = ["pt", "en"];
+export const isLang = (v: unknown): v is Lang => v === "pt" || v === "en";
+
 export const LINKS = {
   email: "pedrofelipewk@gmail.com",
   linkedin: "https://www.linkedin.com/in/pdrflp/",
@@ -143,7 +146,7 @@ type ProjectText = {
 };
 
 export type Dict = {
-  nav: { work: string; about: string; experience: string; contact: string; inside: string };
+  nav: { work: string; journal: string; about: string; experience: string; contact: string; inside: string };
   hero: {
     status: string;
     role: string;
@@ -198,6 +201,7 @@ export const DICT: Record<Lang, Dict> = {
   pt: {
     nav: {
       work: "Projetos",
+      journal: "Diário",
       about: "Sobre",
       experience: "Experiência",
       contact: "Contato",
@@ -327,6 +331,7 @@ export const DICT: Record<Lang, Dict> = {
   en: {
     nav: {
       work: "Work",
+      journal: "Journal",
       about: "About",
       experience: "Experience",
       contact: "Contact",

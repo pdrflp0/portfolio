@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { useLang } from "@/lib/i18n";
 import { unlock } from "@/lib/achievements";
 import { logEvent } from "@/lib/visit-log";
+import { addSpan, endSpan, startSpan, type Span } from "@/lib/tracing";
 
 /* ——— sprites (cada string é uma linha; "#" = pixel aceso) ——— */
 const BUG_A = ["..#.....#..", "...#...#...", "..#######..", ".##.###.##.", "###########", "#.#######.#", "#.#.....#.#", "...##.##..."];
@@ -102,6 +103,8 @@ export function Arcade({ open, onClose }: { open: boolean; onClose: () => void }
     let lives = 3;
     let wave = 1;
     let status: Status = "ready";
+    let run: Span | null = null;
+    let waveStart = 0;
     let statusTimer = 0;
     let paused = false;
     let raf = 0;
@@ -141,6 +144,8 @@ export function Arcade({ open, onClose }: { open: boolean; onClose: () => void }
         }
         status = "playing";
         message("");
+        run = startSpan("space-invaders run", "interaction");
+        waveStart = performance.now();
       }
     };
 
@@ -274,6 +279,8 @@ export function Arcade({ open, onClose }: { open: boolean; onClose: () => void }
         shots = [];
         enemyShots = [];
         unlock("invaders");
+        addSpan(`wave ${wave}`, "interaction", waveStart, performance.now(), { parent: run, attrs: { score } });
+        waveStart = performance.now() + 1600;
         logEvent({ kind: "event", label: `invaders wave ${wave} cleared`, detail: `score ${score}` });
         message(pt ? `onda ${wave} limpa · 0 bugs em produção` : `wave ${wave} cleared · 0 bugs in prod`);
       }
@@ -284,6 +291,8 @@ export function Arcade({ open, onClose }: { open: boolean; onClose: () => void }
 
     const gameOver = () => {
       status = "over";
+      endSpan(run, { attrs: { score, wave } });
+      run = null;
       logEvent({ kind: "event", label: "invaders game over", detail: `score ${score} · wave ${wave}` });
       message(
         touch
@@ -340,6 +349,7 @@ export function Arcade({ open, onClose }: { open: boolean; onClose: () => void }
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("blur", releaseKeys);
       canvas.onpointerdown = null;
+      if (run) endSpan(run, { attrs: { score, wave, ended: "closed" } });
       input.current = { left: false, right: false, fire: false };
     };
   }, [open, onClose]);

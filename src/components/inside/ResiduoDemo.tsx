@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { useLang } from "@/lib/i18n";
 import { unlock } from "@/lib/achievements";
 import { logEvent } from "@/lib/visit-log";
+import { addSpan, endSpan, startSpan, type Span } from "@/lib/tracing";
 
 type Mode = "vulnerable" | "guarded";
 type Row = { gen: string; rev: number } | null;
@@ -38,6 +39,8 @@ export function ResiduoDemo() {
   const rowRef = useRef<HTMLDivElement>(null);
   const msgRef = useRef<HTMLDivElement>(null);
   const logRef = useRef<HTMLOListElement>(null);
+  const runSpan = useRef<Span | null>(null);
+  const lastStepAt = useRef(0);
 
   const STEPS = [
     { key: "create", label: pt ? "criar item-17" : "create item-17" },
@@ -91,6 +94,30 @@ export function ResiduoDemo() {
     setMode(m);
     setS(INITIAL);
   };
+
+  // cada etapa vira um span no trace do painel
+  useEffect(() => {
+    if (s.step === 0) {
+      if (runSpan.current?.end === null) endSpan(runSpan.current, { attrs: { verdict: "aborted" } });
+      runSpan.current = null;
+      return;
+    }
+    const now = performance.now();
+    if (!runSpan.current) {
+      runSpan.current = startSpan(`residuo demo · ${mode}`, "interaction", { attrs: { scenario: "held-update-after-delete" } });
+      lastStepAt.current = now;
+    }
+    const ev = s.events[s.events.length - 1];
+    if (ev) {
+      addSpan(`${ev.n}. ${ev.actor}: ${ev.line}`, "interaction", lastStepAt.current, now, {
+        parent: runSpan.current,
+        attrs: ev.code ? { result: ev.code } : {},
+      });
+    }
+    lastStepAt.current = now;
+    if (s.verdict) endSpan(runSpan.current, { attrs: { verdict: s.verdict } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s.step]);
 
   // efeitos do veredito: conquista, log e a "ressurreição" com textura faltando
   useEffect(() => {

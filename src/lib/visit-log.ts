@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { endSpan, spansFromResource, startSpan, type Span } from "@/lib/tracing";
 
 export type LogKind = "request" | "event" | "system";
 
@@ -59,7 +60,8 @@ export function bootstrapVisitLog() {
       kind: "request",
       t: nav.responseEnd,
       method: "GET",
-      label: location.pathname,
+      // o documento carregado de fato (depois de navegar no cliente, location já é outra página)
+      label: new URL(nav.name, location.href).pathname,
       status: nav.responseStatus || 200,
       ms: Math.round(nav.responseEnd - nav.requestStart),
       detail: nav.type === "reload" ? "reload" : undefined,
@@ -94,11 +96,15 @@ export type Trace = {
 };
 
 /** Chamada real à API route — devolve o que o servidor viu desta requisição. */
-export async function traceRequest(reason: string): Promise<Trace | null> {
+export async function traceRequest(reason: string, parent?: Span | null): Promise<Trace | null> {
   const start = performance.now();
+  const url = `/api/trace?reason=${encodeURIComponent(reason)}`;
+  const span = startSpan("GET /api/trace", "net", { parent, attrs: { reason } });
   try {
-    const res = await fetch(`/api/trace?reason=${encodeURIComponent(reason)}`, { cache: "no-store" });
+    const res = await fetch(url, { cache: "no-store" });
     const data = (await res.json()) as Trace;
+    const timing = spansFromResource(url, span);
+    endSpan(span, { end: timing?.responseEnd || performance.now(), attrs: { status: res.status, region: data.region ?? "local" } });
     logEvent({
       kind: "request",
       method: "GET",
@@ -109,6 +115,7 @@ export async function traceRequest(reason: string): Promise<Trace | null> {
     });
     return data;
   } catch {
+    endSpan(span, { attrs: { error: "offline" } });
     logEvent({ kind: "request", method: "GET", label: "/api/trace", status: 0, detail: "offline" });
     return null;
   }

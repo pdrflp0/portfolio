@@ -2,12 +2,15 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import gsap from "gsap";
+import { useRouter } from "next/navigation";
+import { POSTS } from "@/content/bugs";
 import { LINKS, PROJECTS, type Lang, type ProjectId } from "@/content/site";
 import { SERVICES } from "@/content/services";
 import type { GitHubSnapshot } from "@/lib/github";
 import { useLang } from "@/lib/i18n";
-import { ACHIEVEMENTS, unlock, useUnlocked } from "@/lib/achievements";
+import { ACHIEVEMENTS, fmtRunTime, unlock, useRun, useUnlocked } from "@/lib/achievements";
 import { logEvent, useVisitLog } from "@/lib/visit-log";
+import { endSpan, markSpan, startSpan, type Span } from "@/lib/tracing";
 
 export type ConsoleApi = {
   inside: () => boolean;
@@ -22,8 +25,8 @@ type Tone = "text" | "dim" | "ok" | "warn" | "err" | "teal" | "rust" | "cmd";
 type Line = { id: number; text: string; tone: Tone };
 
 const COMMANDS = [
-  "help", "whoami", "ls", "open", "demo", "play", "status", "cv", "contact", "hire",
-  "achievements", "log", "lang", "noclip", "clear", "history", "exit",
+  "help", "whoami", "ls", "open", "demo", "play", "status", "bugs", "cv", "contact", "hire",
+  "achievements", "splits", "log", "lang", "noclip", "clear", "history", "exit",
 ] as const;
 
 const PROMPT = "pedro@pdrflp:~$";
@@ -44,7 +47,9 @@ function ago(iso: string, lang: Lang) {
 
 export function Console({ open, onClose, api }: { open: boolean; onClose: () => void; api: ConsoleApi }) {
   const { lang, setLang } = useLang();
+  const router = useRouter();
   const unlocked = useUnlocked();
+  const runState = useRun();
   const log = useVisitLog();
   const pt = lang === "pt";
   const [mounted, setMounted] = useState(open);
@@ -57,6 +62,7 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
   const outRef = useRef<HTMLDivElement>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
   const seq = useRef(0);
+  const session = useRef<Span | null>(null);
   const L = (text: string, tone: Tone = "text"): Line => ({ id: ++seq.current, text, tone });
 
   if (open && !mounted) setMounted(true);
@@ -81,9 +87,12 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
       returnFocus.current = document.activeElement as HTMLElement | null;
       unlock("console");
       logEvent({ kind: "event", label: "console open" });
+      session.current = startSpan("console session", "interaction");
       gsap.fromTo(el, { yPercent: -100 }, { yPercent: 0, duration: reduce ? 0 : 0.42, ease: "expo.out" });
       inputRef.current?.focus({ preventScroll: true });
     } else if (mounted) {
+      endSpan(session.current);
+      session.current = null;
       gsap.to(el, {
         yPercent: -100,
         duration: reduce ? 0 : 0.26,
@@ -112,6 +121,7 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
     history.current = [...history.current.filter((h) => h !== input), input].slice(-50);
     cursor.current = -1;
     logEvent({ kind: "event", label: `cmd ${input.slice(0, 40)}` });
+    markSpan(`$ ${input.slice(0, 40)}`, "interaction", session.current);
 
     const [cmd, ...args] = input.split(/\s+/);
     const arg = args.join(" ");
@@ -129,9 +139,11 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
             ["demo", pt ? "reproduz o bug do Resíduo, passo a passo" : "reproduce the Resíduo bug, step by step"],
             ["play", pt ? "Space Invaders, só que com bugs" : "Space Invaders, but with bugs"],
             ["status", pt ? "CI e commits reais do GitHub" : "real CI and commits from GitHub"],
+            ["bugs [post]", pt ? "diário de bugs (post-mortems)" : "bug journal (post-mortems)"],
             ["cv [pt|en]", pt ? "baixa o currículo" : "downloads the résumé"],
             ["contact", pt ? "e-mail e links" : "email and links"],
             ["achievements", pt ? "segredos encontrados" : "secrets found"],
+            ["splits", pt ? "speedrun desta visita" : "this visit's speedrun"],
             ["log", pt ? "últimas linhas do visit.log" : "tail of visit.log"],
             ["lang <pt|en>", pt ? "troca o idioma" : "switch language"],
             ["noclip", pt ? "atravessa a parede" : "go through the wall"],
@@ -207,6 +219,21 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
         break;
       }
 
+      case "bugs":
+      case "postmortem": {
+        const slug = arg.toLowerCase();
+        const post = slug ? POSTS.find((p) => p.slug === slug || p.slug.startsWith(slug)) : null;
+        if (slug && !post) {
+          print(L(pt ? `post não encontrado: ${arg}` : `post not found: ${arg}`, "err"), ...POSTS.map((p) => L(`  ${p.slug.padEnd(22)}${p.title[lang]}`, "dim")));
+          break;
+        }
+        if (!post) print(...POSTS.map((p) => L(`  ${p.slug.padEnd(22)}${p.title[lang]}`, "text")));
+        print(L(`GET /${lang}/bugs${post ? `/${post.slug}` : ""} 200`, "ok"));
+        onClose();
+        router.push(`/${lang}/bugs${post ? `/${post.slug}` : ""}`);
+        break;
+      }
+
       case "cv": {
         const which: Lang = arg.toLowerCase().startsWith("en") ? "en" : arg ? "pt" : lang;
         openLink(LINKS.cv[which], `Pedro-Felipe-CV-${which.toUpperCase()}.pdf`);
@@ -241,6 +268,19 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
           ),
         );
         break;
+
+      case "splits": {
+        const { splits, records, previous } = runState;
+        print(L(`${pt ? "tentativa" : "attempt"} #${records.attempts} · PB Any% ${records.bestAny !== null ? fmtRunTime(records.bestAny) : "—"}`, "teal"));
+        if (!splits.length) print(L(pt ? "  nenhum split ainda" : "  no splits yet", "dim"));
+        for (const sp of splits) {
+          const a = ACHIEVEMENTS.find((x) => x.id === sp.id)!;
+          const prev = previous.best[sp.id];
+          const d = prev === undefined ? "new" : `${sp.t - prev < 0 ? "−" : "+"}${Math.abs((sp.t - prev) / 1000).toFixed(2)}`;
+          print(L(`  ${a.title[lang].padEnd(24)}${d.padStart(8)}  ${fmtRunTime(sp.t)}`, prev === undefined || sp.t < prev ? "ok" : "text"));
+        }
+        break;
+      }
 
       case "log":
         print(
@@ -307,6 +347,13 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
     if (rest.length === 0) {
       const hits = COMMANDS.filter((c) => c.startsWith(cmd.toLowerCase()));
       if (hits.length === 1) setValue(`${hits[0]} `);
+      else if (hits.length > 1) print(L(hits.join("  "), "dim"));
+      return;
+    }
+    if (["bugs", "postmortem"].includes(cmd)) {
+      const partial = rest.join(" ").toLowerCase();
+      const hits = POSTS.map((p) => p.slug).filter((slug) => slug.startsWith(partial));
+      if (hits.length === 1) setValue(`${cmd} ${hits[0]}`);
       else if (hits.length > 1) print(L(hits.join("  "), "dim"));
       return;
     }

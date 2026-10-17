@@ -17,6 +17,9 @@ export type NoclipLayers = {
 
 export type Origin = { x: number; y: number };
 
+/** Avisado a cada fase da animação (null = terminou) — vira span no trace do painel. */
+export type PhaseHook = (phase: string | null) => void;
+
 const prefersReducedMotion = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -108,23 +111,26 @@ function bootTargets(inside: HTMLElement) {
 }
 
 /** superfície → por dentro */
-export function enterNoclip(layers: NoclipLayers, origin?: Origin) {
+export function enterNoclip(layers: NoclipLayers, origin?: Origin, onPhase: PhaseHook = () => {}) {
   const { surface, host, voidLayer, inside } = layers;
   const scrollY = window.scrollY;
   const o = origin ?? { x: window.innerWidth / 2, y: window.innerHeight * 0.42 };
 
   if (prefersReducedMotion()) {
     const tl = gsap.timeline();
+    onPhase("fade");
     tl.to(surface, { opacity: 0, duration: 0.18 })
       .call(() => {
         surface.style.visibility = "hidden";
         lockScroll(true);
       })
       .set(surface, { clearProps: "opacity" })
-      .fromTo(inside, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.25 });
+      .fromTo(inside, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.25 })
+      .call(() => onPhase(null));
     return { tl, scrollY };
   }
 
+  onPhase("snapshot");
   const { wall, slices } = buildWall(layers, scrollY, o);
   const checker = voidLayer.querySelector<HTMLElement>("[data-void-checker]");
   const grids = voidLayer.querySelectorAll<HTMLElement>("[data-void-grid]");
@@ -143,6 +149,7 @@ export function enterNoclip(layers: NoclipLayers, origin?: Origin) {
     .call(() => {
       surface.style.visibility = "hidden";
       lockScroll(true);
+      onPhase("z-fight");
     })
 
     // 1. z-fighting: a parede treme de forma travada, sem easing
@@ -154,7 +161,10 @@ export function enterNoclip(layers: NoclipLayers, origin?: Origin) {
       yoyo: true,
       stagger: { each: 0.012, from: "random" },
     })
-    .call(() => wall.classList.add("noclip-rgb"))
+    .call(() => {
+      wall.classList.add("noclip-rgb");
+      onPhase("crack");
+    })
 
     // 2. a parede racha: faixas deslizam e a textura de baixo aparece nas frestas
     .to(slices, {
@@ -167,6 +177,7 @@ export function enterNoclip(layers: NoclipLayers, origin?: Origin) {
 
     // 3. a câmera atravessa: tudo cresce a partir do ponto de origem
     .addLabel("pass", "-=0.02")
+    .call(() => onPhase("pass-through"), [], "pass")
     .to(checker, { autoAlpha: 0, duration: 0.12, ease: "steps(2)" }, "pass")
     .to(grids, { autoAlpha: 1, duration: 0.35, ease: "power1.out" }, "pass")
     .to(wall, { scale: 3.4, duration: 0.85, ease: "power3.in" }, "pass")
@@ -190,6 +201,7 @@ export function enterNoclip(layers: NoclipLayers, origin?: Origin) {
 
     // 4. do outro lado: o painel do sistema dá boot
     .addLabel("boot", "pass+=0.95")
+    .call(() => onPhase("boot"), [], "boot")
     .set(inside, { autoAlpha: 1 }, "boot")
     .fromTo(
       lines,
@@ -214,13 +226,14 @@ export function enterNoclip(layers: NoclipLayers, origin?: Origin) {
     .call(() => {
       host.replaceChildren();
       gsap.set(host, { autoAlpha: 0 });
+      onPhase(null);
     });
 
   return { tl, scrollY };
 }
 
 /** por dentro → superfície (a mesma viagem, de volta) */
-export function exitNoclip(layers: NoclipLayers, scrollY: number, origin?: Origin) {
+export function exitNoclip(layers: NoclipLayers, scrollY: number, origin?: Origin, onPhase: PhaseHook = () => {}) {
   const { surface, host, voidLayer, inside } = layers;
   const o = origin ?? { x: window.innerWidth / 2, y: window.innerHeight * 0.42 };
 
@@ -232,9 +245,11 @@ export function exitNoclip(layers: NoclipLayers, scrollY: number, origin?: Origi
 
   if (prefersReducedMotion()) {
     const tl = gsap.timeline();
+    onPhase("fade");
     tl.to(inside, { autoAlpha: 0, duration: 0.18 })
       .call(restore)
-      .fromTo(surface, { opacity: 0 }, { opacity: 1, duration: 0.25, clearProps: "opacity" });
+      .fromTo(surface, { opacity: 0 }, { opacity: 1, duration: 0.25, clearProps: "opacity" })
+      .call(() => onPhase(null));
     return tl;
   }
 
@@ -243,6 +258,7 @@ export function exitNoclip(layers: NoclipLayers, scrollY: number, origin?: Origi
   window.scrollTo({ top: scrollY, behavior: "instant" });
   lockScroll(true);
 
+  onPhase("snapshot");
   const { wall, slices } = buildWall(layers, scrollY, o);
   const checker = voidLayer.querySelector<HTMLElement>("[data-void-checker]");
   const grids = voidLayer.querySelectorAll<HTMLElement>("[data-void-grid]");
@@ -268,6 +284,7 @@ export function exitNoclip(layers: NoclipLayers, scrollY: number, origin?: Origi
     .set(host, { autoAlpha: 1 })
 
     // o painel desliga
+    .call(() => onPhase("shutdown"))
     .to([...panels].reverse(), {
       clipPath: "inset(0% 0% 100% 0%)",
       duration: 0.32,
@@ -279,6 +296,7 @@ export function exitNoclip(layers: NoclipLayers, scrollY: number, origin?: Origi
 
     // a câmera volta pela parede
     .addLabel("back", "-=0.1")
+    .call(() => onPhase("pass-back"), [], "back")
     .fromTo(
       [floor, ceiling],
       { backgroundPositionY: "384px" },
@@ -292,6 +310,7 @@ export function exitNoclip(layers: NoclipLayers, scrollY: number, origin?: Origi
     .set(checker, { autoAlpha: 1 }, "back+=0.7")
 
     // as frestas se fecham num estalo
+    .call(() => onPhase("seal"), [], "back+=0.78")
     .to(slices, { x: (i) => tear[i], duration: 0.1, ease: "steps(2)" }, "back+=0.78")
     .call(() => wall.classList.remove("noclip-rgb"))
     .to(slices, {
@@ -305,6 +324,7 @@ export function exitNoclip(layers: NoclipLayers, scrollY: number, origin?: Origi
       host.replaceChildren();
       gsap.set([host, voidLayer], { autoAlpha: 0 });
       gsap.set(inside, { autoAlpha: 0 });
+      onPhase(null);
     });
 
   return tl;

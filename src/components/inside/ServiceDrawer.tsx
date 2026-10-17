@@ -7,6 +7,9 @@ import { CASES, SERVICES } from "@/content/services";
 import { useLang } from "@/lib/i18n";
 import { logEvent } from "@/lib/visit-log";
 import { trackCaseStudy } from "@/lib/achievements";
+import { endSpan, startSpan } from "@/lib/tracing";
+import Link from "next/link";
+import { POSTS } from "@/content/bugs";
 import type { GitHubSnapshot } from "@/lib/github";
 import { RelTime } from "@/components/RelTime";
 import dynamic from "next/dynamic";
@@ -60,7 +63,14 @@ export function ServiceDrawer({
     if (!shown || !panelRef.current) return;
     const panel = panelRef.current;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const tl = gsap.timeline();
+    const span = startSpan(`GET /services/${shown}`, "interaction");
+    const render = startSpan("render case study", "render", { parent: span });
+    const tl = gsap.timeline({
+      onComplete: () => {
+        endSpan(render);
+        endSpan(span);
+      },
+    });
     tl.fromTo(scrimRef.current, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3 });
     if (reduce) {
       tl.fromTo(panel, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.2 }, 0);
@@ -89,6 +99,8 @@ export function ServiceDrawer({
     return () => {
       tl.kill();
       clearTimeout(jump);
+      if (render.end === null) endSpan(render, { attrs: { interrupted: "yes" } });
+      if (span.end === null) endSpan(span);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shown]);
@@ -258,6 +270,26 @@ export function ServiceDrawer({
                 ))}
               </ul>
             )
+          )}
+
+          {POSTS.filter((p) => p.project === shown).length > 0 && (
+            <div data-stagger className="mt-12 border-t border-obs-line pt-6">
+              <p className="text-[11px] uppercase tracking-[0.12em] text-obs-dim">post-mortems</p>
+              <ul className="mt-3 space-y-2">
+                {POSTS.filter((p) => p.project === shown).map((p) => (
+                  <li key={p.slug}>
+                    <Link
+                      href={`/${lang}/bugs/${p.slug}`}
+                      onClick={() => logEvent({ kind: "event", label: `open post ${p.slug}` })}
+                      className="group flex items-baseline justify-between gap-4 border border-obs-line px-4 py-3 transition-colors hover:border-obs-teal"
+                    >
+                      <span className="font-sans text-[15px] text-obs-text group-hover:text-obs-teal">{p.title[lang]}</span>
+                      <span className="shrink-0 text-[11px] text-obs-dim" aria-hidden>→</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
 
           <a

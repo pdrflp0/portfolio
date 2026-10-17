@@ -3,15 +3,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import gsap from "gsap";
-import type { ProjectId } from "@/content/site";
+import { PROJECTS, type Lang, type ProjectId } from "@/content/site";
 import type { GitHubSnapshot } from "@/lib/github";
 import { LangProvider, useLang } from "@/lib/i18n";
 import { bootstrapVisitLog, logEvent, traceRequest, type Trace } from "@/lib/visit-log";
-import { unlock, type AchievementId } from "@/lib/achievements";
+import { startRun, unlock, type AchievementId } from "@/lib/achievements";
+import { bootstrapPageTrace, endSpan, phases, startSpan } from "@/lib/tracing";
 import { Surface, type NoclipOrigin } from "./surface/Surface";
 import { Inside } from "./inside/Inside";
 import type { ConsoleApi } from "./console/Console";
 import { AchievementToasts } from "./achievements/Achievements";
+import { SplitBanner } from "./inside/Speedrun";
 import { VoidLayer } from "./noclip/VoidLayer";
 import { enterNoclip, exitNoclip, type NoclipLayers } from "./noclip/transition";
 
@@ -33,15 +35,17 @@ const DOOR_ACHIEVEMENT: Partial<Record<string, AchievementId>> = {
   konami: "konami",
 };
 
-export function Portfolio({ github }: { github: GitHubSnapshot | null }) {
+type PortfolioProps = { lang: Lang; initialService: ProjectId | null; github: GitHubSnapshot | null };
+
+export function Portfolio({ lang, initialService, github }: PortfolioProps) {
   return (
-    <LangProvider>
-      <Stage github={github} />
+    <LangProvider initial={lang}>
+      <Stage github={github} initialService={initialService} />
     </LangProvider>
   );
 }
 
-function Stage({ github }: { github: GitHubSnapshot | null }) {
+function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
   const { lang } = useLang();
   const [mode, setMode] = useState<Mode>("surface");
   const [trace, setTrace] = useState<Trace | null>(null);
@@ -54,6 +58,8 @@ function Stage({ github }: { github: GitHubSnapshot | null }) {
   const originRef = useRef<NoclipOrigin | undefined>(undefined);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const afterEnter = useRef<(() => void) | null>(null);
+  // num link direto (/pt/residuo) a URL só passa a seguir o estado depois que o projeto abre
+  const urlSynced = useRef(initialService === null);
 
   const surfaceRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -84,10 +90,12 @@ function Stage({ github }: { github: GitHubSnapshot | null }) {
       unlock("noclip");
       const door = DOOR_ACHIEVEMENT[via];
       if (door) unlock(door);
-      traceRequest("noclip").then((t) => t && setTrace(t));
-      const { tl, scrollY } = enterNoclip(l, origin);
+      const span = startSpan("noclip.enter", "interaction", { attrs: { via } });
+      traceRequest("noclip", span).then((t) => t && setTrace(t));
+      const { tl, scrollY } = enterNoclip(l, origin, phases(span));
       scrollRef.current = scrollY;
       tl.eventCallback("onComplete", () => {
+        endSpan(span);
         go("inside");
         const pending = afterEnter.current;
         afterEnter.current = null;
@@ -106,8 +114,10 @@ function Stage({ github }: { github: GitHubSnapshot | null }) {
       setArcadeOpen(false);
       go("exiting");
       logEvent({ kind: "event", label: `noclip off`, detail: via });
-      const tl = exitNoclip(l, scrollRef.current, originRef.current);
+      const span = startSpan("noclip.exit", "interaction", { attrs: { via } });
+      const tl = exitNoclip(l, scrollRef.current, originRef.current, phases(span));
       tl.eventCallback("onComplete", () => {
+        endSpan(span);
         go("surface");
         // devolve o foco para quem abriu (o ponto, o botão, a cena…)
         const back = returnFocusRef.current;
@@ -160,10 +170,42 @@ function Stage({ github }: { github: GitHubSnapshot | null }) {
     github,
   };
 
+  // a URL acompanha o projeto aberto: dá para copiar e mandar o link do estudo de caso
+  useEffect(() => {
+    if (selected === initialService) urlSynced.current = true;
+    if (!urlSynced.current) return;
+    const path = `/${lang}${selected ? `/${selected}` : ""}`;
+    if (window.location.pathname !== path) {
+      window.history.replaceState(window.history.state, "", path + window.location.search + window.location.hash);
+    }
+    const project = selected ? PROJECTS.find((p) => p.id === selected) : null;
+    document.title = project
+      ? `${project.name[lang]} — Pedro Felipe`
+      : lang === "pt"
+        ? "Pedro Felipe — Desenvolvedor back-end"
+        : "Pedro Felipe — Back-end developer";
+  }, [lang, selected, initialService]);
+
+  // link direto: mostra a superfície por um instante e atravessa até o projeto
+  useEffect(() => {
+    if (!initialService) return;
+    const id = setTimeout(() => {
+      afterEnter.current = () => selectService(initialService);
+      enter(undefined, "link");
+    }, 900);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // saindo para outra página (ex.: o diário de bugs) com o painel aberto, a página de destino precisa rolar
+  useEffect(() => () => document.documentElement.classList.remove("noclip-active"), []);
+
   // estado inicial das camadas escondidas
   useEffect(() => {
     gsap.set([hostRef.current, voidRef.current, insideRef.current], { autoAlpha: 0 });
     bootstrapVisitLog();
+    bootstrapPageTrace();
+    startRun();
   }, []);
 
   // atalhos: ~ abre o console, digitar "noclip", Konami code e Esc para voltar
@@ -264,6 +306,7 @@ function Stage({ github }: { github: GitHubSnapshot | null }) {
       {(arcadeOpen || mode === "inside") && <Arcade open={arcadeOpen && mode === "inside"} onClose={closeArcade} />}
       <Console open={consoleOpen} onClose={closeConsole} api={consoleApi} />
       <AchievementToasts />
+      <SplitBanner show={mode === "inside"} />
       <p className="sr-only" aria-live="polite">
         {mode === "inside" ? (lang === "pt" ? "Painel do sistema aberto" : "System view open") : ""}
       </p>

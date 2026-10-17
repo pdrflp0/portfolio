@@ -1,28 +1,23 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { DICT, type Dict, type Lang } from "@/content/site";
+import { DICT, isLang, type Dict, type Lang } from "@/content/site";
 import { logEvent } from "@/lib/visit-log";
-
-const STORAGE_KEY = "pf.lang";
 
 type LangContextValue = { lang: Lang; t: Dict; setLang: (lang: Lang) => void };
 
 const LangContext = createContext<LangContextValue | null>(null);
 
-export function LangProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("pt");
+/** Troca o primeiro segmento da URL (/pt/residuo → /en/residuo) sem recarregar a página. */
+export function swapLangInPath(path: string, lang: Lang) {
+  const parts = path.split("/");
+  if (isLang(parts[1])) parts[1] = lang;
+  else parts.splice(1, 0, lang);
+  return parts.join("/") || `/${lang}`;
+}
 
-  useEffect(() => {
-    let initial: Lang | null = null;
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved === "pt" || saved === "en") initial = saved;
-    } catch {}
-    if (!initial && !navigator.language.toLowerCase().startsWith("pt")) initial = "en";
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- preferência só existe no cliente
-    if (initial) setLangState(initial);
-  }, []);
+export function LangProvider({ initial, children }: { initial: Lang; children: React.ReactNode }) {
+  const [lang, setLangState] = useState<Lang>(initial);
 
   useEffect(() => {
     document.documentElement.lang = lang === "pt" ? "pt-BR" : "en";
@@ -33,14 +28,13 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
       if (prev !== next) logEvent({ kind: "event", label: `lang.switch ${prev}→${next}` });
       return next;
     });
-    try {
-      localStorage.setItem(STORAGE_KEY, next);
-    } catch {}
+    // a URL é a fonte da verdade do idioma; o cookie faz "/" lembrar da escolha
+    document.cookie = `pf.lang=${next}; path=/; max-age=31536000; samesite=lax`;
+    const { pathname, search, hash } = window.location;
+    window.history.replaceState(window.history.state, "", swapLangInPath(pathname, next) + search + hash);
   }, []);
 
-  return (
-    <LangContext.Provider value={{ lang, t: DICT[lang], setLang }}>{children}</LangContext.Provider>
-  );
+  return <LangContext.Provider value={{ lang, t: DICT[lang], setLang }}>{children}</LangContext.Provider>;
 }
 
 export function useLang() {
