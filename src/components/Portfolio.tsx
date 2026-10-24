@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import gsap from "gsap";
-import { PROJECTS, type Lang, type ProjectId } from "@/content/site";
+import { LINKS, PROJECTS, type Lang, type ProjectId } from "@/content/site";
 import type { GitHubSnapshot } from "@/lib/github";
 import { LangProvider, useLang } from "@/lib/i18n";
 import { bootstrapVisitLog, logEvent, traceRequest, type Trace } from "@/lib/visit-log";
@@ -313,6 +313,10 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
     bootstrapVisitLog();
     bootstrapPageTrace();
     startRun();
+    // segredos que dependem do relógio de quem visita
+    const now = new Date();
+    if (now.getHours() < 5) unlock("night-shift");
+    if (now.getDay() === 5 && now.getHours() >= 18) unlock("friday-deploy");
   }, []);
 
   // atalhos: ~ abre o console, digitar "noclip", Konami code e Esc para voltar
@@ -364,12 +368,34 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
   // a dica no console do navegador — e `noclip` funciona digitado lá também
   useEffect(() => {
     console.log(
-      "%c▚ pdrflp%c\n\nalgo neste mapa não foi renderizado direito.\nsomething on this map didn't render right.\n\n%c> noclip%c   (ou aperte ~ na página / or press ~ on the page)",
+      "%c▚ pdrflp%c\n\nalgo neste mapa não foi renderizado direito.\nsomething on this map didn't render right.\n\n%c> noclip%c   (ou aperte ~ na página / or press ~ on the page)\n%c> pedro.hire()%c   (recrutador? / hiring?)",
       "font: 600 14px ui-monospace, monospace; color:#ff00dc; background:#000; padding:4px 8px",
       "font: 12px ui-monospace, monospace; color:#8b949e",
       "font: 600 12px ui-monospace, monospace; color:#6e9ead",
       "font: 12px ui-monospace, monospace; color:#8b949e",
+      "font: 600 12px ui-monospace, monospace; color:#6e9ead",
+      "font: 12px ui-monospace, monospace; color:#8b949e",
     );
+    // uma API de verdade no console, para quem abre o F12
+    const pedro = {
+      hire() {
+        unlock("hired");
+        logEvent({ kind: "event", label: "pedro.hire()" });
+        const pt = document.documentElement.lang.startsWith("pt");
+        console.log(
+          pt
+            ? `%cContratação iniciada.%c\n\n  e-mail    ${LINKS.email}\n  linkedin  ${LINKS.linkedin}\n  currículo ${location.origin}${LINKS.cv.pt}\n\nPode chamar: estou buscando estágio ou vaga júnior.`
+            : `%cHiring process started.%c\n\n  email     ${LINKS.email}\n  linkedin  ${LINKS.linkedin}\n  résumé    ${location.origin}${LINKS.cv.en}\n\nGo ahead: open to internships and junior roles.`,
+          "font: 600 13px ui-monospace, monospace; color:#5fb98e",
+          "font: 12px ui-monospace, monospace; color:#c4ccd5",
+        );
+        return pt ? "Ótima decisão." : "Great call.";
+      },
+      help() {
+        return "pedro.hire() · noclip";
+      },
+    };
+    (window as unknown as { pedro: typeof pedro }).pedro = pedro;
     try {
       Object.defineProperty(window, "noclip", {
         configurable: true,
@@ -382,16 +408,25 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
     return () => {
       try {
         delete (window as unknown as Record<string, unknown>).noclip;
+        delete (window as unknown as Record<string, unknown>).pedro;
       } catch {}
     };
   }, [toggle]);
+
+  const openSecrets = useCallback(
+    (origin: NoclipOrigin) => {
+      afterEnter.current = () => document.getElementById("panel-achievements")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      enter(origin, "secrets");
+    },
+    [enter],
+  );
 
   const closeConsole = useCallback(() => setConsoleOpen(false), []);
   const closeArcade = useCallback(() => setArcadeOpen(false), []);
 
   return (
     <>
-      <Surface ref={surfaceRef} onNoclip={enter} hidden={mode !== "surface"} fromGithub={fromGithub} />
+      <Surface ref={surfaceRef} onNoclip={enter} onSecrets={openSecrets} hidden={mode !== "surface"} fromGithub={fromGithub} />
       <div ref={voidRef} className="fixed inset-0 z-40 overflow-hidden bg-obs-0" aria-hidden>
         <VoidLayer />
       </div>

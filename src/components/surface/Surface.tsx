@@ -6,7 +6,7 @@ import { DIARY, POSTS, readingMinutes } from "@/content/bugs";
 import { LINKS, PROJECTS, SKILLS } from "@/content/site";
 import { useLang } from "@/lib/i18n";
 import { logEvent } from "@/lib/visit-log";
-import { unlock } from "@/lib/achievements";
+import { ACHIEVEMENTS, unlock, useUnlocked } from "@/lib/achievements";
 import { LangToggle } from "@/components/LangToggle";
 import { GlitchDot } from "./GlitchDot";
 import { HeroScene } from "./HeroScene";
@@ -18,11 +18,13 @@ export type NoclipHandler = (origin?: NoclipOrigin, via?: string) => void;
 
 type Props = {
   onNoclip: NoclipHandler;
+  /** atravessa direto para o painel de segredos */
+  onSecrets: (origin: NoclipOrigin) => void;
   hidden: boolean;
   fromGithub?: boolean;
 };
 
-export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNoclip, hidden, fromGithub }, ref) {
+export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNoclip, onSecrets, hidden, fromGithub }, ref) {
   const { t, lang } = useLang();
   const rootRef = useRef<HTMLDivElement | null>(null);
 
@@ -384,7 +386,10 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
       <footer className="bg-ink text-paper/60">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 border-t border-paper/10 px-5 py-6 font-mono text-[11px] sm:px-8">
           <span>© Pedro Felipe de Oliveira · {t.footer}</span>
-          <CheatsToggle onActivate={(o) => onNoclip(o, "sv_cheats")} />
+          <span className="flex items-center gap-5">
+            <SecretsCounter onOpen={onSecrets} />
+            <CheatsToggle onActivate={(o) => onNoclip(o, "sv_cheats")} />
+          </span>
         </div>
       </footer>
 
@@ -430,6 +435,24 @@ function CopyEmail() {
       <span aria-live="polite">
         {copied ? (lang === "pt" ? "copiado ✓" : "copied ✓") : lang === "pt" ? "copiar e-mail" : "copy email"}
       </span>
+    </button>
+  );
+}
+
+/** Quantos segredos a pessoa já achou: o convite discreto para o lado de dentro. */
+function SecretsCounter({ onOpen }: { onOpen: (o: NoclipOrigin) => void }) {
+  const { lang } = useLang();
+  const found = useUnlocked().length;
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        onOpen({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+      }}
+      className="text-paper/50 transition-colors hover:text-paper/80"
+    >
+      <span className="text-[#ff4fd8]" aria-hidden>◆</span> {lang === "pt" ? "segredos" : "secrets"} {found}/{ACHIEVEMENTS.length}
     </button>
   );
 }

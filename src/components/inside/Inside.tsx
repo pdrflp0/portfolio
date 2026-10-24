@@ -147,7 +147,7 @@ export const Inside = forwardRef<HTMLDivElement, Props>(function Inside(
             <Panel title="speedrun" meta="LiveSplit">
               {booted && <SpeedrunPanel active={active} />}
             </Panel>
-            <Panel title="achievements" meta={pt ? "segredos deste mapa" : "secrets on this map"}>
+            <Panel id="panel-achievements" title="achievements" meta={pt ? "segredos deste mapa" : "secrets on this map"}>
               {booted && <AchievementsPanel />}
             </Panel>
           </div>
@@ -227,18 +227,20 @@ function Deploys({ github, onSelect }: { github: GitHubSnapshot | null; onSelect
 }
 
 function Panel({
+  id,
   title,
   meta,
   children,
   className = "",
 }: {
+  id?: string;
   title: string;
   meta?: string;
   children: React.ReactNode;
   className?: string;
 }) {
   return (
-    <section data-boot className={`relative flex min-h-0 flex-col bg-obs-1/80 ${className}`}>
+    <section id={id} data-boot className={`relative flex min-h-0 scroll-mt-16 flex-col bg-obs-1/80 ${className}`}>
       <span data-boot-line className="absolute inset-x-0 top-0 h-px bg-obs-line" aria-hidden />
       <span data-boot-line className="absolute inset-x-0 bottom-0 h-px bg-obs-line" aria-hidden />
       <span className="absolute inset-y-0 left-0 w-px bg-obs-line" aria-hidden />

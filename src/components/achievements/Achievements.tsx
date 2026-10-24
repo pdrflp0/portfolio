@@ -105,8 +105,8 @@ export function AchievementsPanel() {
               <PixelIcon rows={a.icon} size={28} on={on} />
               <div className="min-w-0 text-[11px] leading-snug">
                 <p className={`truncate ${on ? "text-obs-text" : "text-obs-dim"}`}>{on ? a.title[lang] : "???"}</p>
-                <p className="truncate text-obs-dim">
-                  {on ? a.desc[lang] : lang === "pt" ? "ainda não encontrado" : "not found yet"}
+                <p className="truncate text-obs-dim" title={on ? a.desc[lang] : a.hint[lang]}>
+                  {on ? a.desc[lang] : `${lang === "pt" ? "dica" : "hint"}: ${a.hint[lang]}`}
                 </p>
               </div>
             </li>

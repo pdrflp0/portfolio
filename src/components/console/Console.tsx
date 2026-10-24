@@ -264,7 +264,7 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
         print(
           L(`${unlocked.length}/${ACHIEVEMENTS.length}`, "teal"),
           ...ACHIEVEMENTS.map((a) =>
-            unlocked.includes(a.id) ? L(`  [x] ${a.title[lang]} — ${a.desc[lang]}`, "ok") : L("  [ ] ???", "dim"),
+            unlocked.includes(a.id) ? L(`  [x] ${a.title[lang]} — ${a.desc[lang]}`, "ok") : L(`  [ ] ??? — ${a.hint[lang]}`, "dim"),
           ),
         );
         break;
