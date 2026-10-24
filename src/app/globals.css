@@ -403,10 +403,10 @@ html.noclip-active body {
   50% { transform: rotate(-66deg) translateY(-1px); }
 }
 
-.scene-player[data-state="walk"] .leg-a { animation: step-a 0.32s steps(2) infinite; }
-.scene-player[data-state="walk"] .leg-b { animation: step-a 0.32s steps(2) infinite -0.16s; }
-.scene-player[data-state="walk"] .arm-a { animation: swing 0.32s steps(2) infinite; }
-.scene-player[data-state="walk"] .arm-b { animation: swing 0.32s steps(2) infinite -0.16s; }
+:is(.scene-player, .companion)[data-state="walk"] .leg-a { animation: step-a 0.32s steps(2) infinite; }
+:is(.scene-player, .companion)[data-state="walk"] .leg-b { animation: step-a 0.32s steps(2) infinite -0.16s; }
+:is(.scene-player, .companion)[data-state="walk"] .arm-a { animation: swing 0.32s steps(2) infinite; }
+:is(.scene-player, .companion)[data-state="walk"] .arm-b { animation: swing 0.32s steps(2) infinite -0.16s; }
 .scene-player[data-state="type"] .arm-a,
 .scene-player[data-state="type"] .arm-b { animation: typing 0.22s steps(2) infinite; }
 .scene-player[data-state="type"] .arm-b { animation-delay: -0.11s; }
@@ -513,4 +513,61 @@ html.noclip-active body {
 
 @media (prefers-reduced-motion: reduce) {
   .trace-running { animation: none; }
+}
+
+/* ——— física da página (src/lib/physics.ts) ——— */
+html.physics-lock,
+html.physics-lock body {
+  overflow: hidden;
+}
+
+.demolished {
+  background-image: conic-gradient(#ff00dc 25%, #000 0 50%, #ff00dc 0 75%, #000 0) !important;
+  background-size: 16px 16px !important;
+  color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.demolished * {
+  visibility: hidden;
+}
+
+html.r-drawcollision :is(header, nav, section, article, aside, div, p, h1, h2, h3, li, dl, dt, dd, a, button, svg, img, canvas, pre, figure) {
+  outline: 1px solid rgb(255 79 216 / 0.5);
+  outline-offset: -1px;
+}
+
+html.r-drawcollision :is(a, button) {
+  outline-color: rgb(95 185 142 / 0.85);
+  background-color: rgb(95 185 142 / 0.08);
+}
+
+/* ——— o Pedro que acompanha a rolagem (Companion.tsx) ——— */
+.companion .player-eye {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+.companion[data-state="sleep"] .player-eye { transform: scaleY(0.5); }
+.companion[data-state="sleep"] svg { animation: companion-breathe 2.4s ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes companion-breathe {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.97); }
+}
+.companion.companion-dark svg { filter: drop-shadow(0 0 1px rgb(243 240 232 / 0.55)); }
+.companion.companion-dark .companion-bubble { background: var(--paper); color: var(--ink); }
+.companion-bubble { animation: bubble-in 0.18s var(--ease-out) both; }
+.companion-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  background: inherit;
+  transform: rotate(45deg);
+}
+.companion-bubble.-left-3::after { left: 18px; }
+.companion-bubble.-right-3::after { right: 18px; }
+@keyframes bubble-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.96); }
 }

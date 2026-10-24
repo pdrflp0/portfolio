@@ -12,6 +12,8 @@ import { GlitchDot } from "./GlitchDot";
 import { HeroScene } from "./HeroScene";
 import { MapDoor } from "./MapDoor";
 import { EdgeOfMap } from "./EdgeOfMap";
+import { Companion } from "./Companion";
+import { Portrait } from "./Portrait";
 
 export type NoclipOrigin = { x: number; y: number };
 export type NoclipHandler = (origin?: NoclipOrigin, via?: string) => void;
@@ -27,6 +29,7 @@ type Props = {
 export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNoclip, onSecrets, hidden, fromGithub }, ref) {
   const { t, lang } = useLang();
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
 
   // Revela seções ao rolar e registra no log da visita quais foram vistas.
   // Sem JS (ou antes dele), tudo fica visível: o estado escondido só vale com data-reveal.
@@ -150,7 +153,7 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
               </div>
             </div>
 
-            <div className="hero-in mx-auto w-full max-w-[540px] lg:mx-0 lg:justify-self-end" style={{ ["--d" as string]: "380ms" }}>
+            <div ref={heroRef} className="hero-in mx-auto w-full max-w-[540px] lg:mx-0 lg:justify-self-end" style={{ ["--d" as string]: "380ms" }}>
               <HeroScene paused={hidden} onNoclip={onNoclip} fromGithub={fromGithub} />
             </div>
           </div>
@@ -168,7 +171,7 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
         {/* PROJETOS */}
         <section id="work" data-reveal className="reveal scroll-mt-16">
           <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
-            <SectionLabel index="01" title={t.work.title} />
+            <SectionLabel index="01" title={t.work.title} spot="work" />
 
             <ol className="mt-12 divide-y divide-line border-y border-line">
               {featured.map((p, i) => {
@@ -178,7 +181,7 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
                     <span className="font-mono text-xs text-ink-3">{String(i + 1).padStart(2, "0")}</span>
                     <div>
                       <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-rust">{text.kind}</p>
-                      <h3 className="mt-3 font-display text-4xl leading-[1.02] tracking-tight sm:text-5xl">{p.name[lang]}</h3>
+                      <h3 data-spot={p.id} data-spot-x="0.7" className="mt-3 font-display text-4xl leading-[1.02] tracking-tight sm:text-5xl">{p.name[lang]}</h3>
                       <p className="mt-4 max-w-md text-[1.05rem] leading-relaxed text-ink-2">{text.summary}</p>
                       <a
                         href={p.repo}
@@ -211,7 +214,7 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
               })}
             </ol>
 
-            <h3 className="mt-16 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">{t.work.more}</h3>
+            <h3 data-spot="others" data-spot-x="0.9" className="mt-16 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">{t.work.more}</h3>
             <ul className="mt-5 grid gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-3">
               {others.map((p) => (
                 <li key={p.id} className="bg-paper">
@@ -238,7 +241,7 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
         <section id="journal" data-reveal className="reveal scroll-mt-16 border-t border-line">
           <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
             <div className="flex flex-wrap items-end justify-between gap-6">
-              <SectionLabel index="02" title={DIARY[lang].title} />
+              <SectionLabel index="02" title={DIARY[lang].title} spot="journal" />
               <Link href={`/${lang}/bugs`} className="link-underline font-mono text-[12px] text-ink-2">
                 {DIARY[lang].all} →
               </Link>
@@ -263,9 +266,15 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
         {/* SOBRE */}
         <section id="about" data-reveal className="reveal scroll-mt-16 border-t border-line">
           <div className="mx-auto grid max-w-6xl gap-10 px-5 py-20 sm:px-8 sm:py-28 md:grid-cols-[16rem_1fr]">
-            <SectionLabel index="03" title={t.about.title} />
+            <div>
+              <SectionLabel index="03" title={t.about.title} />
+              <figure className="mt-8 w-28 sm:w-36">
+                <Portrait label={lang === "pt" ? "Pedro em pixel art" : "Pedro in pixel art"} className="block w-full cursor-pointer" />
+                <figcaption className="mt-2 font-mono text-[11px] text-ink-3">player_1.png</figcaption>
+              </figure>
+            </div>
             <div className="max-w-2xl space-y-6 text-xl leading-[1.55] text-ink sm:text-[1.4rem]">
-              <p>
+              <p data-spot="about" data-spot-x="0.75">
                 {t.about.lead[0]}
                 <MapDoor onActivate={(o) => onNoclip(o, "about")}>{t.about.lead[1]}</MapDoor>
                 {t.about.lead[2]}
@@ -284,7 +293,7 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
             <div>
               <article className="grid gap-4 sm:grid-cols-[1fr_auto]">
                 <div>
-                  <h3 className="font-display text-3xl tracking-tight sm:text-4xl">{t.experience.company}</h3>
+                  <h3 data-spot="experience" data-spot-x="0.6" className="font-display text-3xl tracking-tight sm:text-4xl">{t.experience.company}</h3>
                   <p className="mt-1 text-ink-2">{t.experience.role}</p>
                 </div>
                 <p className="font-mono text-[13px] text-ink-3 sm:text-right">
@@ -315,7 +324,7 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
                 </p>
               </article>
 
-              <h3 className="mt-16 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">{t.skills.title}</h3>
+              <h3 data-spot="toolbox" data-spot-x="0.9" className="mt-16 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">{t.skills.title}</h3>
               <dl className="mt-5 divide-y divide-line border-y border-line">
                 {SKILLS.map((g) => (
                   <div key={g.group.en} className="grid gap-2 py-3.5 sm:grid-cols-[11rem_1fr]">
@@ -332,7 +341,7 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
         <section id="contact" data-reveal className="reveal scroll-mt-16 border-t border-line bg-ink text-paper">
           <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-paper/50">05 — {t.nav.contact}</p>
-            <h2 className="mt-6 font-display text-[clamp(3rem,9vw,7rem)] leading-[0.92] tracking-[-0.03em]">
+            <h2 data-spot="contact" data-spot-dark data-spot-x="0.6" className="mt-6 font-display text-[clamp(3rem,9vw,7rem)] leading-[0.92] tracking-[-0.03em]">
               {t.contact.title}
             </h2>
             <p className="mt-6 max-w-lg text-lg text-paper/70">{t.contact.lead}</p>
@@ -393,6 +402,7 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
         </div>
       </footer>
 
+      <Companion active={!hidden} rootRef={rootRef} heroRef={heroRef} />
       <EdgeOfMap enabled={!hidden} label={t.noclip.edge} more={t.noclip.edgeMore} onTrigger={(o) => onNoclip(o, "edge")} />
     </div>
   );
@@ -481,9 +491,9 @@ function CheatsToggle({ onActivate }: { onActivate: (o: NoclipOrigin) => void })
   );
 }
 
-function SectionLabel({ index, title }: { index: string; title: string }) {
+function SectionLabel({ index, title, spot }: { index: string; title: string; spot?: string }) {
   return (
-    <h2 className="flex items-baseline gap-3 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">
+    <h2 data-spot={spot} data-spot-x={spot ? "0.5" : undefined} className="flex items-baseline gap-3 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">
       <span>{index}</span>
       <span className="h-px w-6 translate-y-[-3px] bg-ink-3/50" aria-hidden />
       <span className="text-ink">{title}</span>
