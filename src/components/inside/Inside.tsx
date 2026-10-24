@@ -1,6 +1,7 @@
 "use client";
 
-import { forwardRef, useEffect, useState } from "react";
+import { createContext, forwardRef, useContext, useEffect, useState } from "react";
+import { DecodeText } from "@/components/DecodeText";
 import dynamic from "next/dynamic";
 import { LINKS, type ProjectId } from "@/content/site";
 import { SERVICES } from "@/content/services";
@@ -22,6 +23,9 @@ const loadSpeedrun = () => import("./Speedrun");
 const loadVisitLog = () => import("./VisitLog");
 const loadDrawer = () => import("./ServiceDrawer");
 const loadAchievements = () => import("@/components/achievements/Achievements");
+
+/** os títulos dos painéis se decodificam quando o painel liga */
+const Booted = createContext(false);
 
 const Skeleton = ({ h }: { h: string }) => <div className={`${h} animate-pulse bg-obs-2/40`} aria-hidden />;
 const ServiceMap = dynamic(() => loadMap().then((m) => m.ServiceMap), { ssr: false, loading: () => <Skeleton h="h-[420px]" /> });
@@ -129,44 +133,46 @@ export const Inside = forwardRef<HTMLDivElement, Props>(function Inside(
         </div>
       </header>
 
-      <main inert={blocked || undefined} className="relative mx-auto grid max-w-[1400px] grid-cols-1 gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="grid min-w-0 grid-cols-1 gap-4">
-          <Panel title={pt ? "topologia · serviços" : "topology · services"} meta={pt ? "clique num serviço" : "click a service"}>
-            {booted && <ServiceMap active={active} github={github} onSelect={onSelect} />}
-          </Panel>
-
-          <Panel title="env | grep PEDRO" meta="whoami">
-            {booted && <EnvBlock />}
-          </Panel>
-
-          <Panel title="trace" meta={pt ? "cascata desta visita" : "this visit, as a waterfall"}>
-            {booted && <TracePanel />}
-          </Panel>
-
-          <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2">
-            <Panel title="speedrun" meta="LiveSplit">
-              {booted && <SpeedrunPanel active={active} />}
+      <Booted.Provider value={active}>
+        <main inert={blocked || undefined} className="relative mx-auto grid max-w-[1400px] grid-cols-1 gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="grid min-w-0 grid-cols-1 gap-4">
+            <Panel title={pt ? "topologia · serviços" : "topology · services"} meta={pt ? "clique num serviço" : "click a service"}>
+              {booted && <ServiceMap active={active} github={github} onSelect={onSelect} />}
             </Panel>
-            <Panel id="panel-achievements" title="achievements" meta={pt ? "segredos deste mapa" : "secrets on this map"}>
-              {booted && <AchievementsPanel />}
+
+            <Panel title="env | grep PEDRO" meta="whoami">
+              {booted && <EnvBlock />}
+            </Panel>
+
+            <Panel title="trace" meta={pt ? "cascata desta visita" : "this visit, as a waterfall"}>
+              {booted && <TracePanel />}
+            </Panel>
+
+            <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2">
+              <Panel title="speedrun" meta="LiveSplit">
+                {booted && <SpeedrunPanel active={active} />}
+              </Panel>
+              <Panel id="panel-achievements" title="achievements" meta={pt ? "segredos deste mapa" : "secrets on this map"}>
+                {booted && <AchievementsPanel />}
+              </Panel>
+            </div>
+
+            <Panel title="deploys" meta={github ? "github" : "offline"}>
+              {booted && <Deploys github={github} onSelect={onSelect} />}
             </Panel>
           </div>
 
-          <Panel title="deploys" meta={github ? "github" : "offline"}>
-            {booted && <Deploys github={github} onSelect={onSelect} />}
-          </Panel>
-        </div>
-
-        <div className="min-w-0 lg:sticky lg:top-[58px] lg:h-[calc(100dvh-74px)]">
-          <Panel
-            title="visit.log"
-            meta={pt ? "esta visita, ao vivo" : "this visit, live"}
-            className="h-[420px] lg:h-full"
-          >
-            {booted && <VisitLog trace={trace} />}
-          </Panel>
-        </div>
-      </main>
+          <div className="min-w-0 lg:sticky lg:top-[58px] lg:h-[calc(100dvh-74px)]">
+            <Panel
+              title="visit.log"
+              meta={pt ? "esta visita, ao vivo" : "this visit, live"}
+              className="h-[420px] lg:h-full"
+            >
+              {booted && <VisitLog trace={trace} />}
+            </Panel>
+          </div>
+        </main>
+      </Booted.Provider>
 
       <div inert={modalOpen || undefined} className="contents">
         {booted && <ServiceDrawer id={selected} focus={focus} github={github} onClose={onCloseDrawer} onPlay={onPlay} />}
@@ -239,6 +245,7 @@ function Panel({
   children: React.ReactNode;
   className?: string;
 }) {
+  const booted = useContext(Booted);
   return (
     <section id={id} data-boot className={`relative flex min-h-0 scroll-mt-16 flex-col bg-obs-1/80 ${className}`}>
       <span data-boot-line className="absolute inset-x-0 top-0 h-px bg-obs-line" aria-hidden />
@@ -248,7 +255,7 @@ function Panel({
       <header className="flex items-center justify-between gap-4 border-b border-obs-line px-4 py-2.5 text-[11px]">
         <h2 className="text-obs-text">
           <span className="text-obs-rust">▍</span>
-          {title}
+          <DecodeText text={title} run={booted} />
         </h2>
         {meta && <span className="text-obs-dim">{meta}</span>}
       </header>

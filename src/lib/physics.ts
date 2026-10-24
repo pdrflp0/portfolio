@@ -10,14 +10,14 @@ import gsap from "gsap";
 
 const CANDIDATES = "h1,h2,h3,h4,p,li,dt,dd,pre,figure,img,svg,canvas,button,a,kbd,input,[data-block]";
 const IGNORE = "[data-companion],[data-console],[data-physics-ignore]";
-const MAX_BLOCKS = 90;
+const MAX_BLOCKS = 140;
 
 const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 
 let busy: gsap.core.Timeline | null = null;
 
-/** Blocos visíveis: os mais externos entre os candidatos, sem os elementos inline (que não aceitam transform). */
+/** Blocos visíveis: as peças mais internas entre os candidatos, sem os elementos inline (que não aceitam transform). */
 function visibleBlocks(root: HTMLElement): HTMLElement[] {
   const vh = window.innerHeight;
   const all = [...root.querySelectorAll<HTMLElement>(CANDIDATES)].filter((el) => {
@@ -26,12 +26,9 @@ function visibleBlocks(root: HTMLElement): HTMLElement[] {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < vh;
   });
-  const set = new Set(all);
-  const outer = all.filter((el) => {
-    for (let p = el.parentElement; p && p !== root; p = p.parentElement) if (set.has(p)) return false;
-    return true;
-  });
-  return outer.slice(0, MAX_BLOCKS);
+  // um bloco que contém outros candidatos fica parado: quem cai são as peças de dentro
+  const pieces = all.filter((el) => !all.some((other) => other !== el && el.contains(other)));
+  return pieces.slice(0, MAX_BLOCKS);
 }
 
 function lock(on: boolean) {

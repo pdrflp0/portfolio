@@ -16,6 +16,7 @@ import { AchievementToasts } from "./achievements/Achievements";
 import { SplitBanner } from "./inside/Speedrun";
 import { VoidLayer } from "./noclip/VoidLayer";
 import { enterNoclip, exitNoclip, type NoclipLayers } from "./noclip/transition";
+import { demolish, drawCollision, zeroGravity } from "@/lib/physics";
 
 // console e jogo só carregam quando alguém abre: a superfície continua leve para o recrutador
 const Console = dynamic(() => import("./console/Console").then((m) => m.Console), { ssr: false });
@@ -244,6 +245,14 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
     openService: (id) => whenInside(() => selectService(id)),
     openDemo: () => whenInside(() => selectService("residuo", "demo")),
     openArcade: () => whenInside(() => setArcadeOpen(true)),
+    physics: (kind) => {
+      if (kind === "collision-on" || kind === "collision-off") return drawCollision(kind === "collision-on");
+      const root = modeRef.current === "surface" ? surfaceRef.current : insideRef.current;
+      if (!root) return;
+      logEvent({ kind: "event", label: kind === "zero-g" ? "sv_gravity 0" : "rm -rf /" });
+      if (kind === "zero-g") zeroGravity(root);
+      else demolish(root);
+    },
     github,
   };
 

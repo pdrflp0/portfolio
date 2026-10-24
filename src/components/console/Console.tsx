@@ -18,6 +18,8 @@ export type ConsoleApi = {
   openService: (id: ProjectId) => void;
   openDemo: () => void;
   openArcade: () => void;
+  /** física da página visível (superfície ou painel) */
+  physics: (kind: "zero-g" | "demolish" | "collision-on" | "collision-off") => void;
   github: GitHubSnapshot | null;
 };
 
@@ -27,6 +29,7 @@ type Line = { id: number; text: string; tone: Tone };
 const COMMANDS = [
   "help", "whoami", "ls", "open", "demo", "play", "status", "bugs", "cv", "contact", "hire",
   "achievements", "splits", "log", "lang", "noclip", "clear", "history", "exit",
+  "sv_gravity", "r_drawcollision", "cl_companion",
 ] as const;
 
 const PROMPT = "pedro@pdrflp:~$";
@@ -308,8 +311,45 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
         break;
 
       case "sv_cheats":
-        print(L(arg === "1" ? (pt ? "cheats ativados. tente: noclip, god" : "cheats enabled. try: noclip, god") : "sv_cheats 0", "rust"));
+        print(
+          L(
+            arg === "1"
+              ? pt
+                ? "cheats ativados. tente: noclip, god, sv_gravity 0, r_drawcollision 1"
+                : "cheats enabled. try: noclip, god, sv_gravity 0, r_drawcollision 1"
+              : "sv_cheats 0",
+            "rust",
+          ),
+        );
         break;
+      case "sv_gravity": {
+        if (arg === "") {
+          print(L('"sv_gravity" = "800"', "dim"));
+          break;
+        }
+        if (Number(arg) === 0) {
+          print(L("sv_gravity 0", "rust"), L(pt ? "gravidade desligada. ela volta em alguns segundos." : "gravity off. it comes back in a few seconds.", "dim"));
+          unlock("zero-g");
+          onClose();
+          setTimeout(() => api.physics("zero-g"), 350);
+        } else {
+          print(L(`sv_gravity ${arg}`, "dim"));
+        }
+        break;
+      }
+      case "r_drawcollision":
+        api.physics(arg === "0" ? "collision-off" : "collision-on");
+        print(L(`r_drawcollision ${arg === "0" ? 0 : 1}`, "rust"));
+        break;
+      case "cl_companion": {
+        const off = arg === "0";
+        try {
+          localStorage.setItem("pf.companion", off ? "off" : "on");
+        } catch {}
+        window.dispatchEvent(new Event("pf:companion"));
+        print(L(off ? (pt ? "o Pedro em pixel foi dormir." : "pixel Pedro went to bed.") : pt ? "o Pedro em pixel voltou." : "pixel Pedro is back.", "dim"));
+        break;
+      }
 
       case "god":
         print(L(pt ? "god mode ON — os testes continuam obrigatórios." : "god mode ON — tests are still mandatory.", "rust"));
@@ -320,7 +360,17 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
         break;
 
       case "rm":
-        print(L(pt ? "permissão negada: isto aqui é produção." : "permission denied: this is production.", "err"));
+        if (/-\w*r\w*f|-\w*f\w*r/.test(arg)) {
+          print(
+            L(`removing '${args.filter((a) => !a.startsWith("-")).join(" ") || "/"}'…`, "err"),
+            L(pt ? "restaurando do backup. sempre tenha um backup." : "restoring from backup. always have a backup.", "dim"),
+          );
+          unlock("demolition");
+          onClose();
+          setTimeout(() => api.physics("demolish"), 350);
+        } else {
+          print(L(pt ? "permissão negada: isto aqui é produção." : "permission denied: this is production.", "err"));
+        }
         break;
 
       case "history":
@@ -370,6 +420,7 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
   return (
     <div
       ref={rootRef}
+      data-console
       role="dialog"
       aria-modal="false"
       aria-label="Console"
