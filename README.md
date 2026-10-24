@@ -9,15 +9,21 @@ Por fora, é um portfólio limpo: quem sou, projetos, experiência e contato. Ma
 ## O que tem aqui
 
 **Superfície**
+- Na primeira visita, o mapa carrega como num jogo (pulável com Esc).
 - Capa com um mapa isométrico animado e um personagem que atravessa a parede e cai do mapa.
-- Projetos, diário de bugs, sobre, experiência, formação e contato, em PT e EN.
-- Algumas portas escondidas para o lado de dentro (e um botão "ver por dentro" para quem não quiser procurar).
+- Quando a capa sai da tela, o Pedro em pixel acompanha a rolagem, pousa nas seções e comenta cada uma. Parado, dorme; cutucado cinco vezes, a página perde a colisão.
+- Projetos (com prévia em vídeo e estrela do GitHub), diário de bugs, sobre com retrato em pixel art, experiência, formação e contato, em PT e EN.
+- Algumas portas escondidas para o lado de dentro (e um botão "ver por dentro" para quem não quiser procurar), e um contador de segredos no rodapé.
 
 **Por dentro**
 - Topologia dos projetos como serviços, com eventos fluindo e dados reais do GitHub (último commit e CI, com cache de 1h).
 - `visit.log` e um **trace no estilo Jaeger** da própria visita: Navigation/Resource Timing, fases da transição e a rota `/api/trace` com `Server-Timing`.
 - Estudos de caso, incluindo uma **demo jogável** do bug que o [Resíduo](https://github.com/pdrflp0/residuo) reproduz.
-- Console estilo Quake (`~`), conquistas, speedrun estilo LiveSplit e um Space Invaders onde os aliens são bugs.
+- Mapa de visitantes em pixel por país, com quem está no site agora.
+- `git log --graph`: o ano de contribuições no GitHub e um duelo contra o seu.
+- Console estilo Quake (`~`) com `note` (deixa um recado), `sv_gravity 0`, `r_drawcollision 1` e `rm -rf /`; 28 segredos com dicas, speedrun estilo LiveSplit e um Space Invaders onde os aliens são bugs.
+- No console do navegador: `noclip` e `pedro.hire()`.
+- O 404 é jogável: quique o Pedro de volta para o mapa.
 
 **Diário de bugs** — post-mortems em PT/EN com diagramas de sequência: `/pt/bugs`.
 
@@ -25,7 +31,7 @@ Por fora, é um portfólio limpo: quem sou, projetos, experiência e contato. Ma
 
 Next.js 16 (App Router, Cache Components) · TypeScript · Tailwind CSS 4 · GSAP · hospedado na Vercel.
 
-Sem banco, sem serviço pago: conquistas e recordes ficam no navegador do visitante; os dados do GitHub vêm da API pública com cache.
+Sem serviço pago: conquistas e recordes ficam no navegador do visitante; os dados do GitHub vêm da API pública com cache; a contagem de visitantes (anônima, por país) usa o plano gratuito do Upstash.
 
 ## Desempenho e acessibilidade
 
@@ -48,8 +54,16 @@ Abra <http://localhost:3000>. A raiz redireciona para `/pt` ou `/en`.
 | `/pt/residuo` (e os outros projetos) | atravessa direto para o estudo de caso |
 | `/pt/bugs` | diário de bugs |
 | `/api/trace` | o que o servidor viu da sua requisição |
+| `/api/contributions?user=` | o ano de contribuições públicas de alguém no GitHub |
+| `/api/visitors` | visitas por país e quem está no site agora |
 
-Variável opcional: `GITHUB_TOKEN` (token só de leitura) para não depender do limite anônimo da API do GitHub.
+Variáveis opcionais (sem elas, o site funciona e as partes correspondentes ficam desligadas):
+
+| Variável | Para quê |
+| --- | --- |
+| `GITHUB_TOKEN` | token só de leitura, para não depender do limite anônimo da API do GitHub |
+| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Upstash Redis (plano gratuito, pela Vercel Marketplace): mapa de visitantes e "aqui agora" |
+| `RESEND_API_KEY` | Resend (plano gratuito): o comando `note` entrega o recado por e-mail; sem ela, abre o app de e-mail da pessoa |
 
 ## Estrutura
 
