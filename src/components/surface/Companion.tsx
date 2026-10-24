@@ -114,7 +114,8 @@ export function Companion({ active, rootRef, heroRef }: Props) {
     const perch = (el: HTMLElement) => {
       const r = el.getBoundingClientRect();
       const base = root.getBoundingClientRect();
-      const fx = Number(el.dataset.spotX ?? 0.85);
+      // em tela estreita os textos ocupam a largura toda: ele fica na borda direita
+      const fx = window.innerWidth < 640 ? 0.94 : Number(el.dataset.spotX ?? 0.85);
       const x = Math.min(Math.max(r.left - base.left + r.width * fx, 28), base.width - 28);
       return { x, y: r.top - base.top };
     };

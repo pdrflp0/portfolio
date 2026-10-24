@@ -6,9 +6,9 @@ import { unlock } from "@/lib/achievements";
 import { logEvent } from "@/lib/visit-log";
 import { INTRO_KEY } from "@/lib/intro";
 
-const TEXT: Record<Lang, { map: string; lines: string[]; skip: string }> = {
-  pt: { map: "carregando mapa", lines: ["texturas", "colisão", "jogador"], skip: "pular" },
-  en: { map: "loading map", lines: ["textures", "collision", "player"], skip: "skip" },
+const TEXT: Record<Lang, { map: string; lines: string[]; skip: string; tap: string }> = {
+  pt: { map: "carregando mapa", lines: ["texturas", "colisão", "jogador"], skip: "pular", tap: "toque para pular" },
+  en: { map: "loading map", lines: ["textures", "collision", "player"], skip: "skip", tap: "tap to skip" },
 };
 
 /** O mapa carregando por ~1,2 s, como nos jogos. Esc, clique ou toque pulam. */
@@ -73,7 +73,10 @@ export function Intro({ lang }: { lang: Lang }) {
         </span>
       </div>
       <span className="absolute bottom-5 right-5 font-mono text-[11px] text-ink-3">
-        {t.skip} <kbd className="rounded border border-line px-1">esc</kbd>
+        <span className="[@media(hover:none)]:hidden">
+          {t.skip} <kbd className="rounded border border-line px-1">esc</kbd>
+        </span>
+        <span className="hidden [@media(hover:none)]:inline">{t.tap}</span>
       </span>
     </div>
   );
