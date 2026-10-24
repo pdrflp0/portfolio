@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { LANGS, isLang } from "@/content/site";
 import { SITE_URL } from "@/lib/site-url";
 import { fontVars } from "../fonts";
+import { INTRO_SCRIPT } from "@/lib/intro";
 import "../globals.css";
 
 export function generateStaticParams() {
@@ -27,7 +28,11 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
     <html
       lang={lang === "pt" ? "pt-BR" : "en"}
       className={`${fontVars} antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: INTRO_SCRIPT }} />
+      </head>
       <body>{children}</body>
     </html>
   );

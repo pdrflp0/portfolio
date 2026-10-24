@@ -571,3 +571,55 @@ html.r-drawcollision :is(a, button) {
 @keyframes bubble-in {
   from { opacity: 0; transform: translateY(4px) scale(0.96); }
 }
+
+/* ——— intro: o mapa carregando (Intro.tsx) ——— */
+.intro {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper);
+  cursor: pointer;
+}
+html[data-intro="on"] .intro {
+  display: flex;
+  animation: intro-out 0.35s ease-in 1.2s forwards;
+}
+html[data-intro="skip"] .intro {
+  display: flex;
+  animation: intro-out 0.15s ease-in forwards;
+}
+@keyframes intro-out {
+  to { opacity: 0; visibility: hidden; }
+}
+.intro-ok {
+  opacity: 0;
+  animation: intro-show 0s steps(1) forwards;
+  animation-delay: calc(var(--i) * 260ms + 320ms);
+}
+@keyframes intro-show {
+  to { opacity: 1; }
+}
+.intro-cell {
+  background: conic-gradient(#ff00dc 25%, #000 0 50%, #ff00dc 0 75%, #000 0);
+  background-size: 50% 50%;
+  animation: intro-cell 0s steps(1) forwards;
+  animation-delay: calc(var(--i) * 28ms + 120ms);
+}
+@keyframes intro-cell {
+  to { background: var(--paper-2); }
+}
+.intro-bar > span {
+  transform: scaleX(0);
+  animation: intro-bar 1.05s steps(12) forwards;
+}
+@keyframes intro-bar {
+  to { transform: scaleX(1); }
+}
+/* a capa só entra depois que o mapa carregou */
+html[data-intro] .hero-in,
+html[data-intro] .name-in {
+  animation-delay: calc(var(--d, 0ms) + 1.25s);
+}

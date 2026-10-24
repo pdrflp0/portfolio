@@ -13,6 +13,7 @@ import { Surface, type NoclipOrigin } from "./surface/Surface";
 import { Inside } from "./inside/Inside";
 import type { ConsoleApi } from "./console/Console";
 import { AchievementToasts } from "./achievements/Achievements";
+import { Intro } from "./Intro";
 import { SplitBanner } from "./inside/Speedrun";
 import { VoidLayer } from "./noclip/VoidLayer";
 import { enterNoclip, exitNoclip, type NoclipLayers } from "./noclip/transition";
@@ -456,6 +457,7 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
       />
       {(arcadeOpen || mode === "inside") && <Arcade open={arcadeOpen && mode === "inside"} onClose={closeArcade} />}
       <Console open={consoleOpen} onClose={closeConsole} api={consoleApi} />
+      <Intro lang={lang} />
       <AchievementToasts />
       <SplitBanner show={mode === "inside"} />
       <p className="sr-only" aria-live="polite">
