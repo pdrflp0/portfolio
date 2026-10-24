@@ -431,12 +431,14 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
     [enter],
   );
 
+  const stars = Object.fromEntries(Object.entries(github?.repos ?? {}).map(([id, r]) => [id, r?.stars ?? 0]));
+
   const closeConsole = useCallback(() => setConsoleOpen(false), []);
   const closeArcade = useCallback(() => setArcadeOpen(false), []);
 
   return (
     <>
-      <Surface ref={surfaceRef} onNoclip={enter} onSecrets={openSecrets} hidden={mode !== "surface"} fromGithub={fromGithub} />
+      <Surface ref={surfaceRef} onNoclip={enter} onSecrets={openSecrets} hidden={mode !== "surface"} fromGithub={fromGithub} stars={stars} />
       <div ref={voidRef} className="fixed inset-0 z-40 overflow-hidden bg-obs-0" aria-hidden>
         <VoidLayer />
       </div>

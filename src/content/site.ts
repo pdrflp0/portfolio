@@ -28,6 +28,8 @@ export type Project = {
   repo: string;
   stack: string[];
   featured: boolean;
+  /** prévia em vídeo no card da superfície */
+  video?: { src: string; poster: string; full: string };
 };
 
 export const PROJECTS: Project[] = [
@@ -37,6 +39,11 @@ export const PROJECTS: Project[] = [
     repo: "https://github.com/pdrflp0/residuo",
     stack: ["TypeScript", "NestJS", "React", "PostgreSQL", "Playwright"],
     featured: true,
+    video: {
+      src: "/media/residuo-loop.mp4",
+      poster: "/media/residuo-poster.jpg",
+      full: "https://github.com/pdrflp0/residuo/blob/main/docs/media/residuo-intro.mp4",
+    },
   },
   {
     id: "wagering",

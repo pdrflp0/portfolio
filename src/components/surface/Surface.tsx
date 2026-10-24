@@ -14,6 +14,7 @@ import { MapDoor } from "./MapDoor";
 import { EdgeOfMap } from "./EdgeOfMap";
 import { Companion } from "./Companion";
 import { Portrait } from "./Portrait";
+import { ProjectVideo } from "./ProjectVideo";
 
 export type NoclipOrigin = { x: number; y: number };
 export type NoclipHandler = (origin?: NoclipOrigin, via?: string) => void;
@@ -24,9 +25,11 @@ type Props = {
   onSecrets: (origin: NoclipOrigin) => void;
   hidden: boolean;
   fromGithub?: boolean;
+  /** estrelas reais de cada repositório (API do GitHub, com cache) */
+  stars?: Partial<Record<string, number>>;
 };
 
-export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNoclip, onSecrets, hidden, fromGithub }, ref) {
+export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNoclip, onSecrets, hidden, fromGithub, stars }, ref) {
   const { t, lang } = useLang();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const heroRef = useRef<HTMLDivElement>(null);
@@ -183,14 +186,27 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
                       <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-rust">{text.kind}</p>
                       <h3 data-spot={p.id} data-spot-x="0.7" className="mt-3 font-display text-4xl leading-[1.02] tracking-tight sm:text-5xl">{p.name[lang]}</h3>
                       <p className="mt-4 max-w-md text-[1.05rem] leading-relaxed text-ink-2">{text.summary}</p>
-                      <a
-                        href={p.repo}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-6 inline-flex items-center gap-1.5 text-sm text-ink link-underline"
-                      >
-                        {t.work.repo} <span aria-hidden>↗</span>
-                      </a>
+                      <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2">
+                        <a href={p.repo} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm text-ink link-underline">
+                          {t.work.repo} <span aria-hidden>↗</span>
+                        </a>
+                        <StarLink repo={p.repo} count={stars?.[p.id] ?? 0} />
+                      </div>
+                      {p.video && (
+                        <figure className="mt-8 max-w-md">
+                          <ProjectVideo
+                            src={p.video.src}
+                            poster={p.video.poster}
+                            label={lang === "pt" ? `Trecho do vídeo do ${p.name.pt}: o bug acontecendo` : `Clip from the ${p.name.en} video: the bug happening`}
+                          />
+                          <figcaption className="mt-2 flex flex-wrap justify-between gap-2 font-mono text-[11px] text-ink-3">
+                            <span>{lang === "pt" ? "o bug, gravado do app real" : "the bug, recorded from the real app (PT)"}</span>
+                            <a href={p.video.full} target="_blank" rel="noreferrer" className="link-underline">
+                              {lang === "pt" ? "vídeo completo · 79 s ↗" : "full video · 79 s ↗"}
+                            </a>
+                          </figcaption>
+                        </figure>
+                      )}
                     </div>
                     <div>
                       <ul className="space-y-3 text-[0.95rem] leading-relaxed text-ink-2">
@@ -446,6 +462,34 @@ function CopyEmail() {
         {copied ? (lang === "pt" ? "copiado ✓" : "copied ✓") : lang === "pt" ? "copiar e-mail" : "copy email"}
       </span>
     </button>
+  );
+}
+
+/** Estrela no GitHub: a contagem só aparece quando já existe alguma. */
+function StarLink({ repo, count }: { repo: string; count: number }) {
+  const { lang } = useLang();
+  return (
+    <a
+      href={repo}
+      target="_blank"
+      rel="noreferrer"
+      onClick={() => {
+        unlock("stargazer");
+        logEvent({ kind: "event", label: "star", detail: repo.split("/").pop() });
+      }}
+      className="inline-flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 font-mono text-[11px] text-ink-2 transition-colors hover:border-ink hover:text-ink"
+    >
+      <span aria-hidden>★</span>
+      {count > 0 ? (
+        <>
+          star <span className="tabular-nums text-ink">{count}</span>
+        </>
+      ) : lang === "pt" ? (
+        "dar uma estrela"
+      ) : (
+        "star it"
+      )}
+    </a>
   );
 }
 
