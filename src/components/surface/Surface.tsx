@@ -23,13 +23,15 @@ type Props = {
   onNoclip: NoclipHandler;
   /** atravessa direto para o painel de segredos */
   onSecrets: (origin: NoclipOrigin) => void;
+  /** abre o terminal no comando note */
+  onNote: () => void;
   hidden: boolean;
   fromGithub?: boolean;
   /** estrelas reais de cada repositório (API do GitHub, com cache) */
   stars?: Partial<Record<string, number>>;
 };
 
-export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNoclip, onSecrets, hidden, fromGithub, stars }, ref) {
+export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNoclip, onSecrets, onNote, hidden, fromGithub, stars }, ref) {
   const { t, lang } = useLang();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const heroRef = useRef<HTMLDivElement>(null);
@@ -371,6 +373,14 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
               <CopyEmail />
             </div>
             <p className="mt-6 max-w-xl font-mono text-[12px] leading-relaxed text-paper/55">{t.contact.availability}</p>
+            <button
+              type="button"
+              onClick={onNote}
+              className="mt-5 inline-flex items-center gap-2 font-mono text-[12px] text-paper/70 transition-colors hover:text-paper"
+            >
+              <span className="text-[#ff4fd8]" aria-hidden>&gt;_</span>
+              <span className="link-underline">{lang === "pt" ? "ou deixe um recado pelo terminal" : "or leave a note from the terminal"}</span>
+            </button>
 
             <div className="mt-14 flex flex-col gap-8 border-t border-paper/15 pt-8 sm:flex-row sm:items-center sm:justify-between">
               <ul className="flex flex-wrap gap-x-7 gap-y-3 text-sm">

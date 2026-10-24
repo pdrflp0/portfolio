@@ -29,8 +29,11 @@ type Line = { id: number; text: string; tone: Tone };
 const COMMANDS = [
   "help", "whoami", "ls", "open", "demo", "play", "status", "bugs", "cv", "contact", "hire",
   "achievements", "splits", "log", "lang", "noclip", "clear", "history", "exit",
-  "sv_gravity", "r_drawcollision", "cl_companion",
+  "sv_gravity", "r_drawcollision", "cl_companion", "note",
 ] as const;
+
+type NoteStep = "msg" | "email" | "confirm" | "busy";
+const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,24}$/;
 
 const PROMPT = "pedro@pdrflp:~$";
 
@@ -66,9 +69,29 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
   const returnFocus = useRef<HTMLElement | null>(null);
   const seq = useRef(0);
   const session = useRef<Span | null>(null);
+  // recado pelo terminal: mensagem → e-mail → confirmação
+  const note = useRef<{ msg: string; email: string }>({ msg: "", email: "" });
+  const [noteStep, setNoteStep] = useState<NoteStep | null>(null);
   const L = (text: string, tone: Tone = "text"): Line => ({ id: ++seq.current, text, tone });
 
   if (open && !mounted) setMounted(true);
+
+  // comandos pedidos de fora do console (o botão "deixar um recado" do contato)
+  const runRef = useRef<(raw: string) => void>(() => {});
+  useEffect(() => {
+    if (!open) return;
+    const flush = () => {
+      const w = window as Window & { __pfConsole?: string[] };
+      const queued = w.__pfConsole?.splice(0) ?? [];
+      queued.forEach((c) => runRef.current(c));
+    };
+    const id = setTimeout(flush, 60);
+    window.addEventListener("pf:console", flush);
+    return () => {
+      clearTimeout(id);
+      window.removeEventListener("pf:console", flush);
+    };
+  }, [open]);
 
   // boas-vindas na primeira abertura
   useEffect(() => {
@@ -117,8 +140,77 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
 
   const print = (...ls: Line[]) => setLines((prev) => [...prev, ...ls].slice(-400));
 
+  const promptFor = (step: NoteStep | null) =>
+    step === "msg" ? (pt ? "mensagem >" : "message >") : step === "email" ? (pt ? "e-mail >" : "email >") : step === "confirm" ? (pt ? "enviar? (S/n) >" : "send it? (Y/n) >") : PROMPT;
+
+  const startNote = () => {
+    note.current = { msg: "", email: "" };
+    setNoteStep("msg");
+    print(
+      L(pt ? "escreva o recado para o Pedro. cancel desiste." : "write Pedro a note. cancel gives up.", "teal"),
+    );
+  };
+
+  const sendNote = async () => {
+    setNoteStep("busy");
+    print(L(pt ? "enviando…" : "sending…", "dim"));
+    const { msg, email } = note.current;
+    try {
+      const res = await fetch("/api/note", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: msg, email }),
+      });
+      if (res.ok) {
+        print(L(pt ? "recado entregue. obrigado — eu respondo." : "note delivered. thanks — I'll reply.", "ok"));
+        unlock("pen-pal");
+        logEvent({ kind: "event", label: "note sent" });
+      } else if (res.status === 429) {
+        print(L(pt ? "muitos recados hoje. tente amanhã ou mande e-mail." : "too many notes today. try tomorrow or send an email.", "warn"));
+      } else {
+        // sem serviço de e-mail configurado: abre o app de e-mail com o recado pronto
+        print(L(pt ? "abrindo seu app de e-mail com o recado pronto para enviar…" : "opening your email app with the note ready to send…", "warn"));
+        unlock("pen-pal");
+        const subject = pt ? "Recado pelo portfólio" : "Note from the portfolio";
+        openLink(`mailto:${LINKS.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(msg)}`);
+      }
+    } catch {
+      print(L(pt ? "sem rede. o recado não saiu." : "no network. the note didn't go out.", "err"));
+    }
+    setNoteStep(null);
+  };
+
+  const continueNote = (input: string) => {
+    const step = noteStep;
+    if (["cancel", "cancelar", "exit", "q"].includes(input.toLowerCase())) {
+      setNoteStep(null);
+      print(L(pt ? "recado descartado." : "note discarded.", "dim"));
+      return;
+    }
+    if (step === "msg") {
+      if (input.length < 2) return print(L(pt ? "um pouco mais que isso." : "a bit more than that.", "dim"));
+      note.current.msg = input.slice(0, 2000);
+      setNoteStep("email");
+      print(L(pt ? "seu e-mail, para eu responder (enter pula):" : "your email, so I can reply (enter skips):", "dim"));
+    } else if (step === "email") {
+      if (input && !EMAIL_RE.test(input)) return print(L(pt ? "esse e-mail não parece válido." : "that email doesn't look valid.", "err"));
+      note.current.email = input;
+      setNoteStep("confirm");
+    } else if (step === "confirm") {
+      if (/^n/i.test(input)) {
+        setNoteStep(null);
+        print(L(pt ? "recado descartado." : "note discarded.", "dim"));
+      } else void sendNote();
+    }
+  };
+
   const run = (raw: string) => {
     const input = raw.trim();
+    if (noteStep && noteStep !== "busy") {
+      print(L(`${promptFor(noteStep)} ${input}`, "cmd"));
+      continueNote(input);
+      return;
+    }
     print(L(`${PROMPT} ${input}`, "cmd"));
     if (!input) return;
     history.current = [...history.current.filter((h) => h !== input), input].slice(-50);
@@ -145,6 +237,7 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
             ["bugs [post]", pt ? "diário de bugs (post-mortems)" : "bug journal (post-mortems)"],
             ["cv [pt|en]", pt ? "baixa o currículo" : "downloads the résumé"],
             ["contact", pt ? "e-mail e links" : "email and links"],
+            ["note", pt ? "deixa um recado para o Pedro" : "leave Pedro a note"],
             ["achievements", pt ? "segredos encontrados" : "secrets found"],
             ["splits", pt ? "speedrun desta visita" : "this visit's speedrun"],
             ["log", pt ? "últimas linhas do visit.log" : "tail of visit.log"],
@@ -322,6 +415,10 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
           ),
         );
         break;
+      case "note":
+      case "recado":
+        startNote();
+        break;
       case "sv_gravity": {
         if (arg === "") {
           print(L('"sv_gravity" = "800"', "dim"));
@@ -392,6 +489,10 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
     }
   };
 
+  useEffect(() => {
+    runRef.current = run;
+  });
+
   const complete = () => {
     const [cmd, ...rest] = value.split(/\s+/);
     if (rest.length === 0) {
@@ -457,7 +558,7 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
       </div>
       {/* atalhos para quem está no toque */}
       <div className="flex gap-1.5 overflow-x-auto border-t border-obs-line px-4 py-2 sm:hidden">
-        {["help", "whoami", "ls", "demo", "play", "status", "achievements", "noclip"].map((c) => (
+        {["help", "note", "whoami", "ls", "demo", "play", "status", "achievements", "noclip"].map((c) => (
           <button
             key={c}
             type="button"
@@ -479,8 +580,8 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
           setValue("");
         }}
       >
-        <label htmlFor="console-input" className="shrink-0 text-obs-teal">
-          {PROMPT}
+        <label htmlFor="console-input" className={`shrink-0 ${noteStep ? "text-[#ff4fd8]" : "text-obs-teal"}`}>
+          {promptFor(noteStep)}
         </label>
         <input
           id="console-input"

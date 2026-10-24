@@ -436,11 +436,18 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
   const stars = Object.fromEntries(Object.entries(github?.repos ?? {}).map(([id, r]) => [id, r?.stars ?? 0]));
 
   const closeConsole = useCallback(() => setConsoleOpen(false), []);
+  /** abre o console já rodando um comando (o console carrega sob demanda, então vai numa fila) */
+  const consoleRun = useCallback((cmd: string) => {
+    const w = window as Window & { __pfConsole?: string[] };
+    (w.__pfConsole ??= []).push(cmd);
+    setConsoleOpen(true);
+    window.dispatchEvent(new Event("pf:console"));
+  }, []);
   const closeArcade = useCallback(() => setArcadeOpen(false), []);
 
   return (
     <>
-      <Surface ref={surfaceRef} onNoclip={enter} onSecrets={openSecrets} hidden={mode !== "surface"} fromGithub={fromGithub} stars={stars} />
+      <Surface ref={surfaceRef} onNoclip={enter} onSecrets={openSecrets} onNote={() => consoleRun("note")} hidden={mode !== "surface"} fromGithub={fromGithub} stars={stars} />
       <div ref={voidRef} className="fixed inset-0 z-40 overflow-hidden bg-obs-0" aria-hidden>
         <VoidLayer />
       </div>
