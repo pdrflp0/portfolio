@@ -23,6 +23,7 @@ const loadSpeedrun = () => import("./Speedrun");
 const loadVisitLog = () => import("./VisitLog");
 const loadDrawer = () => import("./ServiceDrawer");
 const loadAchievements = () => import("@/components/achievements/Achievements");
+const loadDuel = () => import("./CommitDuel");
 
 /** os títulos dos painéis se decodificam quando o painel liga */
 const Booted = createContext(false);
@@ -33,6 +34,7 @@ const TracePanel = dynamic(() => loadTrace().then((m) => m.TracePanel), { ssr: f
 const SpeedrunPanel = dynamic(() => loadSpeedrun().then((m) => m.SpeedrunPanel), { ssr: false, loading: () => <Skeleton h="h-64" /> });
 const VisitLog = dynamic(() => loadVisitLog().then((m) => m.VisitLog), { ssr: false, loading: () => <Skeleton h="h-full" /> });
 const ServiceDrawer = dynamic(() => loadDrawer().then((m) => m.ServiceDrawer), { ssr: false });
+const CommitDuel = dynamic(() => loadDuel().then((m) => m.CommitDuel), { ssr: false, loading: () => <Skeleton h="h-40" /> });
 const AchievementsPanel = dynamic(() => loadAchievements().then((m) => m.AchievementsPanel), { ssr: false, loading: () => <Skeleton h="h-64" /> });
 
 type Props = {
@@ -63,7 +65,7 @@ export const Inside = forwardRef<HTMLDivElement, Props>(function Inside(
 
   useEffect(() => {
     const prefetch = () => {
-      for (const load of [loadMap, loadTrace, loadSpeedrun, loadVisitLog, loadDrawer, loadAchievements]) load().catch(() => {});
+      for (const load of [loadMap, loadTrace, loadSpeedrun, loadVisitLog, loadDrawer, loadAchievements, loadDuel]) load().catch(() => {});
     };
     const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
     if (w.requestIdleCallback) {
@@ -156,6 +158,10 @@ export const Inside = forwardRef<HTMLDivElement, Props>(function Inside(
                 {booted && <AchievementsPanel />}
               </Panel>
             </div>
+
+            <Panel title="git log --graph" meta={pt ? "12 meses · duelo" : "12 months · duel"}>
+              {booted && <CommitDuel />}
+            </Panel>
 
             <Panel title="deploys" meta={github ? "github" : "offline"}>
               {booted && <Deploys github={github} onSelect={onSelect} />}
