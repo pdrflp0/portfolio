@@ -24,6 +24,7 @@ const loadVisitLog = () => import("./VisitLog");
 const loadDrawer = () => import("./ServiceDrawer");
 const loadAchievements = () => import("@/components/achievements/Achievements");
 const loadDuel = () => import("./CommitDuel");
+const loadVisitors = () => import("./VisitorsMap");
 
 /** os títulos dos painéis se decodificam quando o painel liga */
 const Booted = createContext(false);
@@ -34,6 +35,7 @@ const TracePanel = dynamic(() => loadTrace().then((m) => m.TracePanel), { ssr: f
 const SpeedrunPanel = dynamic(() => loadSpeedrun().then((m) => m.SpeedrunPanel), { ssr: false, loading: () => <Skeleton h="h-64" /> });
 const VisitLog = dynamic(() => loadVisitLog().then((m) => m.VisitLog), { ssr: false, loading: () => <Skeleton h="h-full" /> });
 const ServiceDrawer = dynamic(() => loadDrawer().then((m) => m.ServiceDrawer), { ssr: false });
+const VisitorsMap = dynamic(() => loadVisitors().then((m) => m.VisitorsMap), { ssr: false, loading: () => <Skeleton h="h-56" /> });
 const CommitDuel = dynamic(() => loadDuel().then((m) => m.CommitDuel), { ssr: false, loading: () => <Skeleton h="h-40" /> });
 const AchievementsPanel = dynamic(() => loadAchievements().then((m) => m.AchievementsPanel), { ssr: false, loading: () => <Skeleton h="h-64" /> });
 
@@ -65,7 +67,7 @@ export const Inside = forwardRef<HTMLDivElement, Props>(function Inside(
 
   useEffect(() => {
     const prefetch = () => {
-      for (const load of [loadMap, loadTrace, loadSpeedrun, loadVisitLog, loadDrawer, loadAchievements, loadDuel]) load().catch(() => {});
+      for (const load of [loadMap, loadTrace, loadSpeedrun, loadVisitLog, loadDrawer, loadAchievements, loadDuel, loadVisitors]) load().catch(() => {});
     };
     const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
     if (w.requestIdleCallback) {
@@ -158,6 +160,10 @@ export const Inside = forwardRef<HTMLDivElement, Props>(function Inside(
                 {booted && <AchievementsPanel />}
               </Panel>
             </div>
+
+            <Panel title={pt ? "tráfego · por país" : "traffic · by country"} meta={pt ? "quem já abriu o site" : "who opened this site"}>
+              {booted && <VisitorsMap active={active} region={trace?.region ?? undefined} />}
+            </Panel>
 
             <Panel title="git log --graph" meta={pt ? "12 meses · duelo" : "12 months · duel"}>
               {booted && <CommitDuel />}

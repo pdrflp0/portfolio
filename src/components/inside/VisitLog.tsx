@@ -73,8 +73,8 @@ export function VisitLog({ trace }: { trace: Trace | null }) {
 
       <p className="border-t border-obs-line px-4 py-2 text-[10px] text-obs-dim">
         {lang === "pt"
-          ? "dados reais desta sessão · nada é enviado a terceiros"
-          : "real data from this session · nothing is sent to third parties"}
+          ? "dados reais desta sessão · este log fica só no seu navegador"
+          : "real data from this session · this log stays in your browser"}
       </p>
     </div>
   );

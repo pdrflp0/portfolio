@@ -637,3 +637,8 @@ html[data-intro] .name-in {
 @media (prefers-reduced-motion: reduce) {
   .duel-bar rect { animation: none; }
 }
+
+/* ——— mapa de visitantes: o país de quem está vendo pisca (VisitorsMap.tsx) ——— */
+.visitors-here { animation: visitors-blink 1.1s steps(1) infinite; }
+@keyframes visitors-blink { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .visitors-here { animation: none; } }

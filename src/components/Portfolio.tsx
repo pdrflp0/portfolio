@@ -18,6 +18,7 @@ import { SplitBanner } from "./inside/Speedrun";
 import { VoidLayer } from "./noclip/VoidLayer";
 import { enterNoclip, exitNoclip, type NoclipLayers } from "./noclip/transition";
 import { demolish, drawCollision, zeroGravity } from "@/lib/physics";
+import { startVisitorPresence } from "@/lib/visitors";
 
 // console e jogo só carregam quando alguém abre: a superfície continua leve para o recrutador
 const Console = dynamic(() => import("./console/Console").then((m) => m.Console), { ssr: false });
@@ -323,6 +324,7 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
     bootstrapVisitLog();
     bootstrapPageTrace();
     startRun();
+    startVisitorPresence();
     // segredos que dependem do relógio de quem visita
     const now = new Date();
     if (now.getHours() < 5) unlock("night-shift");
