@@ -618,11 +618,6 @@ html[data-intro="skip"] .intro {
 @keyframes intro-bar {
   to { transform: scaleX(1); }
 }
-/* a capa só entra depois que o mapa carregou */
-html[data-intro] .hero-in,
-html[data-intro] .name-in {
-  animation-delay: calc(var(--d, 0ms) + 1.25s);
-}
 
 /* ——— duelo de commits: os prédios sobem (CommitDuel.tsx) ——— */
 .duel-bar rect {

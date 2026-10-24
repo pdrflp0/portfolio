@@ -1,7 +1,9 @@
+import { connection } from "next/server";
 import { kv, kvEnabled } from "@/lib/kv";
 
 /** GET /api/visitors — visitas por país, total e quem está no site agora. */
 export async function GET() {
+  await connection(); // números ao vivo: nunca pré-renderizar no build
   if (!kvEnabled) return Response.json({ enabled: false });
   try {
     const now = Date.now();
