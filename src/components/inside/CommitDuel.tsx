@@ -70,7 +70,7 @@ function Skyline({ a, b }: { a: Contributions; b: Contributions }) {
 export function CommitDuel() {
   const { lang } = useLang();
   const pt = lang === "pt";
-  const [me, setMe] = useState<Contributions | null>(null);
+  const [me, setMe] = useState<Contributions | null | "error">(null);
   const [rival, setRival] = useState<Contributions | null>(null);
   const [handle, setHandle] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
@@ -78,8 +78,8 @@ export function CommitDuel() {
   useEffect(() => {
     fetch(`/api/contributions?user=${ME}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => d && setMe(d))
-      .catch(() => {});
+      .then((d) => setMe(d ?? "error"))
+      .catch(() => setMe("error"));
   }, []);
 
   const compare = async (e: React.FormEvent) => {
@@ -101,6 +101,17 @@ export function CommitDuel() {
   };
 
   if (!me) return <div className="h-40 animate-pulse bg-obs-2/40" aria-hidden />;
+  if (me === "error") {
+    return (
+      <p className="p-4 text-[11px] leading-relaxed text-obs-dim">
+        {pt ? "O GitHub não respondeu agora. O gráfico continua em " : "GitHub didn't answer right now. The graph is still at "}
+        <a href={`https://github.com/${ME}`} target="_blank" rel="noreferrer" className="text-obs-teal underline-offset-2 hover:underline">
+          github.com/{ME}
+        </a>
+        .
+      </p>
+    );
+  }
 
   const diff = rival ? rival.total - me.total : 0;
   const verdict = !rival

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ACHIEVEMENTS, dismissToast, useToasts, useUnlocked, type Achievement } from "@/lib/achievements";
 import { useLang } from "@/lib/i18n";
@@ -80,6 +80,12 @@ export function AchievementsPanel() {
   const { lang } = useLang();
   const unlocked = useUnlocked();
   const pct = Math.round((unlocked.length / ACHIEVEMENTS.length) * 100);
+  // os achados primeiro; das que faltam, só algumas dicas até a pessoa pedir todas
+  const [all, setAll] = useState(false);
+  const found = ACHIEVEMENTS.filter((a) => unlocked.includes(a.id));
+  const missing = ACHIEVEMENTS.filter((a) => !unlocked.includes(a.id));
+  const shown = all ? [...found, ...missing] : [...found, ...missing.slice(0, 6)];
+  const hiddenCount = ACHIEVEMENTS.length - shown.length;
   const barRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
@@ -98,14 +104,14 @@ export function AchievementsPanel() {
         <span ref={barRef} className="block h-full origin-left bg-[#ff4fd8] transition-transform duration-700" style={{ transform: "scaleX(0)" }} />
       </span>
       <ul className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {ACHIEVEMENTS.map((a) => {
+        {shown.map((a) => {
           const on = unlocked.includes(a.id);
           return (
             <li key={a.id} className={`flex items-center gap-3 border p-2 ${on ? "border-obs-line bg-obs-2" : "border-obs-line/60"}`}>
               <PixelIcon rows={a.icon} size={28} on={on} />
               <div className="min-w-0 text-[11px] leading-snug">
                 <p className={`truncate ${on ? "text-obs-text" : "text-obs-dim"}`}>{on ? a.title[lang] : "???"}</p>
-                <p className="truncate text-obs-dim" title={on ? a.desc[lang] : a.hint[lang]}>
+                <p className="line-clamp-2 text-obs-dim" title={on ? a.desc[lang] : a.hint[lang]}>
                   {on ? a.desc[lang] : `${lang === "pt" ? "dica" : "hint"}: ${a.hint[lang]}`}
                 </p>
               </div>
@@ -113,6 +119,15 @@ export function AchievementsPanel() {
           );
         })}
       </ul>
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setAll(true)}
+          className="mt-3 w-full border border-obs-line py-2 text-[11px] text-obs-dim transition-colors hover:border-obs-teal hover:text-obs-teal"
+        >
+          {lang === "pt" ? `mostrar todas as dicas (+${hiddenCount})` : `show all hints (+${hiddenCount})`}
+        </button>
+      )}
     </div>
   );
 }

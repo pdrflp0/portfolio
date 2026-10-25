@@ -71,6 +71,10 @@ export function RespawnGame() {
       if (e.type === "pointerdown") start();
     };
     const onKey = (e: KeyboardEvent) => {
+      // teclas em links e botões são da página (ex.: Enter no "respawn"), não do jogo
+      if (e.target instanceof Element && e.target.closest("a, button, input, textarea")) return;
+      // fora da partida, as setas continuam rolando a página
+      if (phaseRef.current !== "play" && e.target !== canvas && e.key.startsWith("Arrow")) return;
       const down = e.type === "keydown";
       if (e.key === "ArrowLeft" || e.key === "a") keys.left = down;
       else if (e.key === "ArrowRight" || e.key === "d") keys.right = down;

@@ -114,11 +114,13 @@ export function VisitorsMap({ active, region }: { active: boolean; region?: stri
         </ol>
       )}
 
-      <p className="mt-3 text-obs-dim">
-        {pt
-          ? "Contagem anônima por país. O IP vira um hash que expira em um dia."
-          : "Anonymous count per country. The IP becomes a hash that expires in a day."}
-      </p>
+      {stats?.enabled && (
+        <p className="mt-3 text-obs-dim">
+          {pt
+            ? "Contagem anônima por país. O IP vira um hash que expira em um dia."
+            : "Anonymous count per country. The IP becomes a hash that expires in a day."}
+        </p>
+      )}
     </div>
   );
 }
