@@ -15,6 +15,7 @@ import { EdgeOfMap } from "./EdgeOfMap";
 import { Companion } from "./Companion";
 import { Portrait } from "./Portrait";
 import { ProjectVideo } from "./ProjectVideo";
+import { CountUp } from "@/components/CountUp";
 
 export type NoclipOrigin = { x: number; y: number };
 export type NoclipHandler = (origin?: NoclipOrigin, via?: string) => void;
@@ -114,7 +115,13 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
 
       <main id="top">
         {/* HERO */}
-        <section className="mx-auto max-w-6xl px-5 pt-10 sm:px-8 sm:pt-14 lg:pt-16">
+        <section className="relative isolate mx-auto max-w-6xl px-5 pt-10 sm:px-8 sm:pt-14 lg:pt-16">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-10 -z-10 select-none overflow-hidden whitespace-nowrap text-center font-display text-[clamp(5.5rem,23vw,21rem)] leading-none tracking-[-0.04em] text-transparent [-webkit-text-stroke:1px_rgb(21_23_27/0.07)]"
+          >
+            pdrflp_01
+          </div>
           <div className="grid items-center gap-x-10 gap-y-12 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,1fr)]">
             <div>
               <p className="hero-in flex items-center gap-2.5 font-mono text-xs uppercase tracking-[0.14em] text-ink-2" style={{ ["--d" as string]: "0ms" }}>
@@ -187,6 +194,16 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
                     <div>
                       <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-rust">{text.kind}</p>
                       <h3 data-spot={p.id} data-spot-x="0.7" className="mt-3 font-display text-4xl leading-[1.02] tracking-tight sm:text-5xl">{p.name[lang]}</h3>
+                      {text.result && (
+                        <p className="mt-4 flex flex-wrap items-baseline gap-x-2 border-l-2 border-rust/60 pl-3 font-mono text-[12.5px] text-ink">
+                          {text.result[0] !== null && (
+                            <span className="font-display text-[1.75rem] leading-none text-rust">
+                              <CountUp value={text.result[0]} locale={lang === "pt" ? "pt-BR" : "en"} />
+                            </span>
+                          )}
+                          <span>{text.result[1]}</span>
+                        </p>
+                      )}
                       <p className="mt-4 max-w-md text-[1.05rem] leading-relaxed text-ink-2">{text.summary}</p>
                       <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2">
                         <a href={p.repo} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm text-ink link-underline">
@@ -428,7 +445,17 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
         </div>
       </footer>
 
-      <Companion active={!hidden} rootRef={rootRef} heroRef={heroRef} />
+      <Companion
+        active={!hidden}
+        rootRef={rootRef}
+        heroRef={heroRef}
+        onCommand={(cmd) => {
+          if (cmd === "noclip") onNoclip(undefined, "chat");
+          else if (cmd === "note") onNote();
+          else if (cmd === "secrets") onSecrets({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+          else if (cmd === "cv") window.open(LINKS.cv[lang], "_blank", "noopener");
+        }}
+      />
       <EdgeOfMap enabled={!hidden} label={t.noclip.edge} more={t.noclip.edgeMore} onTrigger={(o) => onNoclip(o, "edge")} />
     </div>
   );

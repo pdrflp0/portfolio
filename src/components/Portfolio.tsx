@@ -19,6 +19,9 @@ import { VoidLayer } from "./noclip/VoidLayer";
 import { enterNoclip, exitNoclip, type NoclipLayers } from "./noclip/transition";
 import { demolish, drawCollision, zeroGravity } from "@/lib/physics";
 import { startVisitorPresence } from "@/lib/visitors";
+import { setGodMode } from "@/lib/cosmetics";
+
+const say = (text: string) => window.dispatchEvent(new CustomEvent("pf:say", { detail: text }));
 
 // console e jogo só carregam quando alguém abre: a superfície continua leve para o recrutador
 const Console = dynamic(() => import("./console/Console").then((m) => m.Console), { ssr: false });
@@ -77,6 +80,7 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
   const afterEnter = useRef<(() => void) | null>(null);
   // "voltar" apertado no meio da travessia: sai assim que ela terminar
   const pendingBack = useRef(false);
+  const godMode = useRef(false);
   // quem pediu a saída que está voltando pelo histórico (botão, esc, console…)
   const leaveVia = useRef<string | null>(null);
   const exitRef = useRef<(via?: string) => void>(() => {});
@@ -329,6 +333,15 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
     const now = new Date();
     if (now.getHours() < 5) unlock("night-shift");
     if (now.getDay() === 5 && now.getHours() >= 18) unlock("friday-deploy");
+    try {
+      const today = now.toISOString().slice(0, 10);
+      const last = localStorage.getItem("pf.last-visit");
+      if (last && last !== today) {
+        unlock("returning");
+        sessionStorage.setItem("pf.returning", "1");
+      }
+      localStorage.setItem("pf.last-visit", today);
+    } catch {}
   }, []);
 
   // atalhos: ~ abre o console, digitar "noclip", Konami code e Esc para voltar
@@ -366,16 +379,50 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
         return;
       }
       if (e.key.length === 1) {
-        buffer = (buffer + e.key.toLowerCase()).slice(-6);
-        if (buffer === "noclip") {
+        buffer = (buffer + e.key.toLowerCase()).slice(-8);
+        if (buffer.endsWith("noclip") || buffer.endsWith("idclip")) {
+          if (buffer.endsWith("idclip")) unlock("cheater");
           buffer = "";
           toggle("typed noclip");
+        } else if (buffer.endsWith("iddqd")) {
+          buffer = "";
+          godMode.current = !godMode.current;
+          setGodMode(godMode.current);
+          unlock("cheater");
+          logEvent({ kind: "event", label: "cheat iddqd", detail: godMode.current ? "on" : "off" });
+          say(godMode.current ? (lang === "pt" ? "god mode: ON. ainda assim, testes obrigatórios." : "god mode: ON. tests are still mandatory.") : "god mode: OFF.");
+        } else if (buffer.endsWith("hesoyam")) {
+          buffer = "";
+          unlock("cheater");
+          logEvent({ kind: "event", label: "cheat hesoyam" });
+          say(lang === "pt" ? "+100 de vida, +100 de colete e um café. bora codar." : "+100 health, +100 armor and a coffee. let's code.");
         }
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [toggle, leave]);
+  }, [toggle, leave, lang]);
+
+  useEffect(() => {
+    let hiddenAt = 0;
+    let title = "";
+    const onVis = () => {
+      if (document.visibilityState === "hidden") {
+        hiddenAt = performance.now();
+        title = document.title;
+        document.title = lang === "pt" ? "cadê você? · pdrflp" : "where'd you go? · pdrflp";
+      } else if (hiddenAt) {
+        document.title = title;
+        if (performance.now() - hiddenAt > 2500) {
+          unlock("tab-away");
+          window.dispatchEvent(new Event("pf:tab-back"));
+        }
+        hiddenAt = 0;
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [lang]);
 
   // a dica no console do navegador — e `noclip` funciona digitado lá também
   useEffect(() => {

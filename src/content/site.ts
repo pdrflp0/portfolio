@@ -149,6 +149,7 @@ export const SKILLS: { group: Record<Lang, string>; items: Record<Lang, string[]
 type ProjectText = {
   kind: string;
   summary: string;
+  result?: [number | null, string];
   points: string[];
 };
 
@@ -161,7 +162,7 @@ export type Dict = {
     ctaWork: string;
     ctaContact: string;
     meta: { label: string; value: string }[];
-    scene: { caption: string; player: string; seam: string; joined: string; left: string };
+    scene: { caption: string; player: string; seam: string; joined: string; left: string; loadTextures: string; loading: string };
   };
   about: {
     title: string;
@@ -232,6 +233,8 @@ export const DICT: Record<Lang, Dict> = {
         seam: "textura com defeito na parede",
         joined: "jogador chegou de github.com/pdrflp0",
         left: "jogador saiu do mapa → github.com/pdrflp0",
+        loadTextures: "carregar texturas",
+        loading: "texturas",
       },
     },
     about: {
@@ -256,6 +259,7 @@ export const DICT: Record<Lang, Dict> = {
     projects: {
       residuo: {
         kind: "Open source · projeto favorito",
+        result: [360, "ordens de entrega exploradas · veredito só com evidência"],
         summary:
           "Laboratório que reproduz, contra um serviço real, como um registro excluído pode reaparecer — e prova isso com evidência.",
         points: [
@@ -266,6 +270,7 @@ export const DICT: Record<Lang, Dict> = {
       },
       wagering: {
         kind: "Desafio técnico · Jungle Gaming",
+        result: [297, "testes · o saldo nunca fica negativo"],
         summary:
           "Serviço financeiro distribuído, projetado e construído sozinho, que processa apostas via HTTP e SQS FIFO sem nunca deixar o saldo negativo.",
         points: [
@@ -276,6 +281,7 @@ export const DICT: Record<Lang, Dict> = {
       },
       "minha-cidade": {
         kind: "Acadêmico · em equipe",
+        result: [null, "funciona offline e sincroniza ao reconectar"],
         summary:
           "App para registrar e acompanhar problemas urbanos de Fortaleza: buracos, iluminação, árvores caídas.",
         points: [
@@ -362,6 +368,8 @@ export const DICT: Record<Lang, Dict> = {
         caption: "fig. 1 — what the map wasn't meant to show",
         player: "player outside the map bounds",
         seam: "broken texture on the wall",
+        loadTextures: "load textures",
+        loading: "textures",
         joined: "player joined from github.com/pdrflp0",
         left: "player left the map → github.com/pdrflp0",
       },
@@ -388,6 +396,7 @@ export const DICT: Record<Lang, Dict> = {
     projects: {
       residuo: {
         kind: "Open source · favorite project",
+        result: [360, "delivery orders explored · verdict on evidence only"],
         summary:
           "A lab that reproduces, against a real service, how a deleted record can come back — and proves it with evidence.",
         points: [
@@ -398,6 +407,7 @@ export const DICT: Record<Lang, Dict> = {
       },
       wagering: {
         kind: "Technical challenge · Jungle Gaming",
+        result: [297, "tests · the balance never goes negative"],
         summary:
           "A distributed financial service, designed and built solo, that processes wagers over HTTP and SQS FIFO without ever letting a balance go negative.",
         points: [
@@ -408,6 +418,7 @@ export const DICT: Record<Lang, Dict> = {
       },
       "minha-cidade": {
         kind: "Academic · team project",
+        result: [null, "works offline and syncs on reconnect"],
         summary:
           "App to report and follow urban issues in Fortaleza: potholes, broken streetlights, fallen trees.",
         points: [

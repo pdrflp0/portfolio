@@ -34,7 +34,17 @@ export type AchievementId =
   | "hired"
   | "cartographer"
   | "respawn"
-  | "duel";
+  | "duel"
+  | "textures"
+  | "returning"
+  | "tab-away"
+  | "chat"
+  | "deadlock"
+  | "pixel-rain"
+  | "ttt-win"
+  | "ttt-pushover"
+  | "cheater"
+  | "daily-commit";
 
 export type Achievement = { id: AchievementId; title: L; desc: L; hint: L; icon: string[] };
 
@@ -370,6 +380,76 @@ export const ACHIEVEMENTS: Achievement[] = [
     desc: { pt: "Colocou o seu ano de commits ao lado do meu.", en: "Put your year of commits next to mine." },
     hint: { pt: "Quem tem o prédio mais alto?", en: "Who has the taller building?" },
     icon: ["........", "......#.", "..#...#.", "..#...#.", "..#.#.#.", "#.#.#.#.", "#.#.#.#.", "########"],
+  },
+  {
+    id: "textures",
+    title: { pt: "Texturas em alta", en: "High textures" },
+    desc: { pt: "Carregou as texturas do mapa.", en: "Loaded the map's textures." },
+    hint: { pt: "O mapa ainda está em wireframe.", en: "The map is still in wireframe." },
+    icon: ["########", "#.#.#.#.", "########", ".#.#.#.#", "########", "#.#.#.#.", "########", ".#.#.#.#"],
+  },
+  {
+    id: "returning",
+    title: { pt: "Save carregado", en: "Save loaded" },
+    desc: { pt: "Voltou ao mapa em outro dia.", en: "Came back to the map on another day." },
+    hint: { pt: "Volte outro dia.", en: "Come back another day." },
+    icon: ["..####..", ".#....#.", "#..#...#", "#..##..#", "#......#", ".#....#.", "..####..", "........"],
+  },
+  {
+    id: "tab-away",
+    title: { pt: "Alt+Tab", en: "Alt+Tab" },
+    desc: { pt: "Saiu da aba e voltou.", en: "Left the tab and came back." },
+    hint: { pt: "Saia da aba e volte.", en: "Leave the tab and come back." },
+    icon: ["######..", "#....#..", "#....###", "#....#.#", "######.#", "..#....#", "..######", "........"],
+  },
+  {
+    id: "chat",
+    title: { pt: "Papo de NPC", en: "NPC talk" },
+    desc: { pt: "Conversou com o Pedro em pixel.", en: "Talked to pixel Pedro." },
+    hint: { pt: "Ele também conversa. É só clicar.", en: "He talks too. Just click." },
+    icon: ["########", "#......#", "#.#..#.#", "#......#", "########", ".##.....", ".#......", "........"],
+  },
+  {
+    id: "deadlock",
+    title: { pt: "Deadlock detected", en: "Deadlock detected" },
+    desc: { pt: "Ganhou o cabo de guerra pelo lock.", en: "Won the tug of war for the lock." },
+    hint: { pt: "Duas transações, um lock e uma corda.", en: "Two transactions, one lock and a rope." },
+    icon: ["##....##", "##....##", "..#..#..", "...##...", "...##...", "..#..#..", "##....##", "##....##"],
+  },
+  {
+    id: "pixel-rain",
+    title: { pt: "Coletor de pixels", en: "Pixel collector" },
+    desc: { pt: "Pegou 12 pixels perdidos no contato.", en: "Caught 12 stray pixels in the contact section." },
+    hint: { pt: "No contato, alguns pixels se soltam.", en: "In the contact section, some pixels come loose." },
+    icon: ["#.......", "........", "...#....", "........", "......#.", "........", ".#......", "....##.."],
+  },
+  {
+    id: "ttt-win",
+    title: { pt: "Três em linha", en: "Three in a row" },
+    desc: { pt: "Ganhou do bug no jogo da velha.", en: "Beat the bug at tic-tac-toe." },
+    hint: { pt: "O bug joga velha. Mal.", en: "The bug plays tic-tac-toe. Badly." },
+    icon: ["#..#..#.", ".#.#.#..", "..###...", "########", "..###...", ".#.#.#..", "#..#..#.", "........"],
+  },
+  {
+    id: "ttt-pushover",
+    title: { pt: "Deixa o bug ganhar", en: "Let the bug win" },
+    desc: { pt: "Deixou o bug ganhar três vezes.", en: "Let the bug win three times." },
+    hint: { pt: "Deixe ele ganhar. Três vezes.", en: "Let it win. Three times." },
+    icon: ["........", ".##..##.", ".##..##.", "........", "..####..", ".#....#.", "........", "........"],
+  },
+  {
+    id: "cheater",
+    title: { pt: "iddqd", en: "iddqd" },
+    desc: { pt: "Digitou um cheat de PC antigo.", en: "Typed an old PC cheat." },
+    hint: { pt: "Os cheats do Doom ainda funcionam.", en: "Doom's cheats still work." },
+    icon: ["########", "#.####.#", "#......#", "#.#..#.#", "#......#", "#..##..#", ".#....#.", "..####.."],
+  },
+  {
+    id: "daily-commit",
+    title: { pt: "Commit do dia", en: "Commit of the day" },
+    desc: { pt: "Marcou o dia de hoje no gráfico de commits.", en: "Marked today on the commit graph." },
+    hint: { pt: "O gráfico de commits espera o de hoje.", en: "The commit graph is waiting for today's." },
+    icon: ["........", ".######.", ".#....#.", ".#.##.#.", ".#.##.#.", ".#....#.", ".######.", "........"],
   },
 ];
 

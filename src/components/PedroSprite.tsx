@@ -67,3 +67,54 @@ export const PEDRO_PIXELS: [string, number, number, number, number][] = [
   ["#1d1714", 0, -31, 2, 2],
   ["#1d1714", 2, -30, 4, 2],
 ];
+
+export type CosmeticId = "none" | "headset" | "cap" | "hardhat" | "shades" | "crown";
+
+const COSMETIC_PIXELS: Record<Exclude<CosmeticId, "none">, [string, number, number, number, number][]> = {
+  headset: [
+    ["#2a2d33", -6, -47, 13, 1],
+    ["#2a2d33", -7, -46, 1, 6],
+    ["#2a2d33", 6, -46, 1, 6],
+    ["#ff4fd8", -8, -41, 2, 4],
+    ["#ff4fd8", 6, -41, 2, 4],
+    ["#2a2d33", 7, -37, 1, 3],
+    ["#2a2d33", 5, -34, 3, 1],
+  ],
+  cap: [
+    ["#3f6f7e", -6, -48, 12, 4],
+    ["#6e9ead", -5, -48, 4, 1],
+    ["#3f6f7e", 4, -45, 6, 1],
+    ["#ff4fd8", -1, -47, 2, 2],
+  ],
+  hardhat: [
+    ["#d9a441", -6, -49, 12, 5],
+    ["#f0c56b", -4, -49, 4, 1],
+    ["#b8862d", -8, -45, 16, 1],
+    ["#b8862d", -1, -49, 2, 5],
+  ],
+  shades: [
+    ["#0b0c0e", -2, -37, 9, 1],
+    ["#0b0c0e", -1, -36, 3, 2],
+    ["#0b0c0e", 3, -36, 3, 2],
+    ["#f3f0e8", -1, -36, 1, 1],
+    ["#f3f0e8", 3, -36, 1, 1],
+  ],
+  crown: [
+    ["#d9a441", -5, -48, 11, 2],
+    ["#d9a441", -5, -51, 1, 3],
+    ["#d9a441", 0, -52, 1, 4],
+    ["#d9a441", 5, -51, 1, 3],
+    ["#ff4fd8", 0, -49, 1, 1],
+  ],
+};
+
+export function Cosmetic({ id }: { id: CosmeticId }) {
+  if (id === "none") return null;
+  return (
+    <>
+      {COSMETIC_PIXELS[id].map(([c, x, y, w, h], i) => (
+        <rect key={i} x={x} y={y} width={w} height={h} fill={c} />
+      ))}
+    </>
+  );
+}

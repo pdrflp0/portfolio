@@ -5,6 +5,13 @@ import gsap from "gsap";
 import { useLang } from "@/lib/i18n";
 import { PedroParts } from "@/components/PedroSprite";
 import type { NoclipOrigin } from "./Surface";
+import { TEXTURES_KEY } from "@/lib/intro";
+import { unlock } from "@/lib/achievements";
+import { logEvent } from "@/lib/visit-log";
+
+const TEXTURED = ".scene-floor, .scene-wall-l, .scene-wall-r, .scene-window, .scene-box polygon, .scene-screen";
+const GRAFFITI = "// TODO: fix later";
+const IDLE_MS = 30_000;
 
 /**
  * Um pequeno mapa isométrico: o quarto onde tudo começou. O jogador digita no
@@ -78,6 +85,63 @@ export function HeroScene({
   const introRef = useRef<((done: () => void) => void) | null>(null);
   // mensagem da legenda: a ponte entre o portfólio e o GitHub
   const [hud, setHud] = useState<"joined" | "left" | null>(null);
+  const [tex, setTex] = useState<"ready" | "wire" | number>("ready");
+  const [graffiti, setGraffiti] = useState(0);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      if (document.documentElement.dataset.textures === "0") setTex("wire");
+    });
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const loadTextures = () => {
+    const root = rootRef.current;
+    if (!root || tex !== "wire") return;
+    root.querySelectorAll<SVGElement>(TEXTURED).forEach((el) => el.style.setProperty("--tx", `${(Math.random() * 0.9).toFixed(2)}s`));
+    delete document.documentElement.dataset.textures;
+    try {
+      localStorage.setItem(TEXTURES_KEY, "1");
+    } catch {}
+    logEvent({ kind: "event", label: "textures loaded" });
+    const start = performance.now();
+    const tick = () => {
+      const pct = Math.min(100, Math.round(((performance.now() - start) / 1300) * 100));
+      setTex(pct);
+      if (pct < 100) requestAnimationFrame(tick);
+      else {
+        unlock("textures");
+        setTimeout(() => setTex("ready"), 500);
+      }
+    };
+    requestAnimationFrame(tick);
+  };
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let timer: ReturnType<typeof setTimeout>;
+    let typing: ReturnType<typeof setInterval> | undefined;
+    const arm = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (!visibleRef.current || pausedRef.current || typing) return arm();
+        let n = 0;
+        typing = setInterval(() => {
+          n++;
+          setGraffiti(n);
+          if (n >= GRAFFITI.length) clearInterval(typing);
+        }, 110);
+      }, IDLE_MS);
+    };
+    const events = ["pointermove", "keydown", "scroll", "touchstart"] as const;
+    events.forEach((ev) => window.addEventListener(ev, arm, { passive: true }));
+    arm();
+    return () => {
+      clearTimeout(timer);
+      clearInterval(typing);
+      events.forEach((ev) => window.removeEventListener(ev, arm));
+    };
+  }, []);
 
   useEffect(() => {
     fromGithubRef.current = fromGithub;
@@ -351,6 +415,16 @@ export function HeroScene({
           onKeyDown={keyActivate("seam")}
         />
 
+        {graffiti > 0 && (
+          <text
+            className="scene-graffiti"
+            aria-hidden
+            transform={`matrix(${C} 0.5 0 1 ${P(2.75, 0, 1.95)[0].toFixed(1)} ${P(2.75, 0, 1.95)[1].toFixed(1)})`}
+          >
+            {GRAFFITI.slice(0, graffiti)}
+          </text>
+        )}
+
         {/* janela */}
         <polygon className="scene-window" points={pts([1.2, 0, 1.15], [2.6, 0, 1.15], [2.6, 0, 2.05], [1.2, 0, 2.05])} />
         <line className="scene-window-bar" x1={P(1.9, 0, 1.15)[0]} y1={P(1.9, 0, 1.15)[1]} x2={P(1.9, 0, 2.05)[0]} y2={P(1.9, 0, 2.05)[1]} />
@@ -439,6 +513,24 @@ export function HeroScene({
           <polygon points={pts([0, 2, 0], [0, 3, 0], [0, 3, 1.25], [0, 2, 1.25])} fill="url(#mt)" />
         </g>
       </svg>
+
+      {tex !== "ready" && (
+        <button
+          type="button"
+          onClick={loadTextures}
+          disabled={tex !== "wire"}
+          className="absolute left-1/2 top-[46%] -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full border border-ink/30 bg-paper/90 px-4 py-2 font-mono text-[12px] text-ink shadow-sm backdrop-blur-sm transition-colors hover:border-ink"
+        >
+          {tex === "wire" ? (
+            <>
+              <span className="mr-2 inline-block size-2 bg-[conic-gradient(#ff00dc_25%,#000_0_50%,#ff00dc_0_75%,#000_0)] [background-size:50%_50%]" aria-hidden />
+              {t.hero.scene.loadTextures}
+            </>
+          ) : (
+            <span className="tabular-nums">{`${t.hero.scene.loading} ${tex}%`}</span>
+          )}
+        </button>
+      )}
 
       <dl ref={hudRef} className="hud pointer-events-none absolute left-0 top-0 grid grid-cols-[auto_auto] gap-x-3 whitespace-pre font-mono text-[10px] leading-[1.6] text-ink-3" aria-hidden>
         <dt>map</dt>

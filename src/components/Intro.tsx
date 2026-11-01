@@ -7,8 +7,8 @@ import { logEvent } from "@/lib/visit-log";
 import { INTRO_KEY } from "@/lib/intro";
 
 const TEXT: Record<Lang, { map: string; lines: string[]; skip: string; tap: string }> = {
-  pt: { map: "carregando mapa", lines: ["texturas", "colisão", "jogador"], skip: "pular", tap: "toque para pular" },
-  en: { map: "loading map", lines: ["textures", "collision", "player"], skip: "skip", tap: "tap to skip" },
+  pt: { map: "carregando mapa", lines: ["geometria", "colisão", "jogador"], skip: "pular", tap: "toque para pular" },
+  en: { map: "loading map", lines: ["geometry", "collision", "player"], skip: "skip", tap: "tap to skip" },
 };
 
 /** O mapa carregando por ~1,2 s, como nos jogos. Esc, clique ou toque pulam. */

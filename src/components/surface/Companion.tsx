@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import gsap from "gsap";
-import { PedroParts } from "@/components/PedroSprite";
+import { Cosmetic, PedroParts } from "@/components/PedroSprite";
+import { useLook } from "@/lib/cosmetics";
+import type { ChatAction } from "@/content/chat";
+import { CompanionChat } from "./CompanionChat";
 import { COMPANION, SPOT_LINES, type SpotId } from "@/content/companion";
 import { useLang } from "@/lib/i18n";
-import { unlock } from "@/lib/achievements";
+import { ACHIEVEMENTS, unlock, useUnlocked } from "@/lib/achievements";
 import { logEvent } from "@/lib/visit-log";
 import { collapse } from "@/lib/physics";
 
@@ -16,7 +19,8 @@ import { collapse } from "@/lib/physics";
  */
 
 const IDLE_MS = 45_000;
-const POKES_TO_KNOCKOUT = 5;
+const POKES_TO_KNOCKOUT = 6;
+const CLICK_WINDOW = 450;
 export const COMPANION_KEY = "pf.companion";
 export const COMPANION_EVENT = "pf:companion";
 
@@ -33,9 +37,10 @@ type Props = {
   active: boolean;
   rootRef: RefObject<HTMLElement | null>;
   heroRef: RefObject<HTMLElement | null>;
+  onCommand: (cmd: NonNullable<ChatAction["command"]>) => void;
 };
 
-export function Companion({ active, rootRef, heroRef }: Props) {
+export function Companion({ active, rootRef, heroRef, onCommand }: Props) {
   const { lang } = useLang();
   const langRef = useRef(lang);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -45,6 +50,14 @@ export function Companion({ active, rootRef, heroRef }: Props) {
   const [bubble, setBubble] = useState<{ text: string; key: number } | null>(null);
   const [side, setSide] = useState<"left" | "right">("right");
   const pokeRef = useRef<() => void>(() => {});
+  const [chatOpen, setChatOpen] = useState(false);
+  const look = useLook();
+  const missing = ACHIEVEMENTS.length - useUnlocked().length;
+  const missingRef = useRef(missing);
+
+  useEffect(() => {
+    missingRef.current = missing;
+  }, [missing]);
 
   useEffect(() => {
     langRef.current = lang;
@@ -146,6 +159,14 @@ export function Companion({ active, rootRef, heroRef }: Props) {
 
     const arrive = () => {
       state("idle");
+      if (greet) {
+        greet = false;
+        const pt = langRef.current === "pt";
+        wrap.classList.toggle("companion-dark", spot?.dataset.spotDark !== undefined);
+        say(pt ? `voltou! faltam ${missingRef.current} segredos.` : `you're back! ${missingRef.current} secrets to go.`);
+        talkLater();
+        return;
+      }
       wrap.classList.toggle("companion-dark", spot?.dataset.spotDark !== undefined);
       if (spot && spot.getBoundingClientRect().top > 190) say(nextLine(spot.dataset.spot!));
       talkLater();
@@ -229,19 +250,23 @@ export function Companion({ active, rootRef, heroRef }: Props) {
       if (knocked) return;
       wake();
       clearTimeout(pokeTimer);
-      pokeTimer = setTimeout(() => (pokes = 0), 3500);
       pokes++;
+      pokeTimer = setTimeout(() => {
+        if (pokes === 1) setChatOpen(true);
+        pokes = 0;
+      }, CLICK_WINDOW);
+      if (pokes === 1) return;
       const lines = COMPANION.pokes[langRef.current];
       if (pokes < POKES_TO_KNOCKOUT) {
-        say(lines[pokes - 1]);
+        say(lines[pokes - 2]);
         gsap.fromTo(p, { y: p.y }, { y: p.y - 10, duration: 0.12, yoyo: true, repeat: 1, ease: "power1.out", onUpdate: apply });
         return;
       }
-      // quinto cutucão: a página perde a colisão e o Pedro cai junto
+      clearTimeout(pokeTimer);
       pokes = 0;
       knocked = true;
       clearTimeout(talkTimer);
-      say(lines[POKES_TO_KNOCKOUT - 1], 900);
+      say(lines[lines.length - 1], 900);
       unlock("knockout");
       logEvent({ kind: "event", label: "page collision lost", detail: "poked pedro" });
       collapse(root);
@@ -263,7 +288,15 @@ export function Companion({ active, rootRef, heroRef }: Props) {
         .to(p, { y: ground, duration: 0.5, ease: "power2.in", onUpdate: apply });
     };
 
-    // entra: cai do alto até o primeiro ponto
+    let greet = false;
+    try {
+      greet = sessionStorage.getItem("pf.returning") === "1" && !sessionStorage.getItem("pf.greeted");
+      if (greet) sessionStorage.setItem("pf.greeted", "1");
+    } catch {}
+    const onTabBack = () => say(langRef.current === "pt" ? "ah, voltou!" : "oh, you're back!");
+    const onSay = (e: Event) => say((e as CustomEvent<string>).detail);
+    window.addEventListener("pf:tab-back", onTabBack);
+    window.addEventListener("pf:say", onSay);
     gsap.set(wrap, { autoAlpha: 1 });
     spot = pick();
     if (spot) moveTo(perch(spot), true);
@@ -283,44 +316,58 @@ export function Companion({ active, rootRef, heroRef }: Props) {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
       inputs.forEach((ev) => window.removeEventListener(ev, wake));
+      window.removeEventListener("pf:tab-back", onTabBack);
+      window.removeEventListener("pf:say", onSay);
       gsap.set(wrap, { autoAlpha: 0 });
       setBubble(null);
       pokeRef.current = () => {};
     };
   }, [on, rootRef]);
 
+  const closeChat = useCallback(() => setChatOpen(false), []);
   const S = 1.6;
   return (
-    <div
-      ref={wrapRef}
-      data-companion
-      data-state="idle"
-      aria-hidden
-      className="companion pointer-events-none absolute left-0 top-0 z-20"
-      style={{ visibility: "hidden", opacity: 0 }}
-    >
-      {bubble && (
-        <span
-          key={bubble.key}
-          className={`companion-bubble absolute bottom-[calc(var(--h)+10px)] w-max max-w-[min(240px,60vw)] rounded-md bg-ink px-2.5 py-1.5 font-mono text-[11px] leading-snug text-paper shadow-lg ${side === "right" ? "-left-3" : "-right-3"}`}
-          style={{ ["--h" as string]: `${48 * S}px` }}
-        >
-          {bubble.text}
-        </span>
-      )}
-      <button
-        type="button"
-        tabIndex={-1}
-        onClick={() => pokeRef.current()}
-        className="pointer-events-auto absolute block cursor-pointer max-sm:scale-[0.78] max-sm:origin-bottom"
-        style={{ left: -11 * S, top: -47 * S, width: 22 * S, height: 48 * S }}
+    <>
+      <div
+        ref={wrapRef}
+        data-companion
+        data-state="idle"
+        aria-hidden
+        className={`companion pointer-events-none absolute left-0 top-0 z-20 ${look.god ? "companion-god" : ""}`}
+        style={{ visibility: "hidden", opacity: 0 }}
       >
-        <svg viewBox="-11 -47 22 48" className="block size-full overflow-visible" shapeRendering="crispEdges">
-          <g ref={spriteRef}>
-            <PedroParts />
-          </g>
-        </svg>
-      </button>
-    </div>
+        {bubble && (
+          <span
+            key={bubble.key}
+            className={`companion-bubble absolute bottom-[calc(var(--h)+10px)] w-max max-w-[min(240px,60vw)] rounded-md bg-ink px-2.5 py-1.5 font-mono text-[11px] leading-snug text-paper shadow-lg ${side === "right" ? "-left-3" : "-right-3"}`}
+            style={{ ["--h" as string]: `${48 * S}px` }}
+          >
+            {bubble.text}
+          </span>
+        )}
+        <button
+          type="button"
+          tabIndex={-1}
+          onClick={() => pokeRef.current()}
+          className="pointer-events-auto absolute block cursor-pointer max-sm:scale-[0.78] max-sm:origin-bottom"
+          style={{ left: -11 * S, top: -47 * S, width: 22 * S, height: 48 * S }}
+        >
+          <svg viewBox="-11 -47 22 48" className="block size-full overflow-visible" shapeRendering="crispEdges">
+            <g ref={spriteRef}>
+              <PedroParts />
+              <Cosmetic id={look.cosmetic} />
+            </g>
+          </svg>
+        </button>
+      </div>
+      <CompanionChat
+        open={chatOpen}
+        onClose={closeChat}
+        onCommand={(cmd) => {
+          setChatOpen(false);
+          onCommand(cmd);
+        }}
+      />
+    </>
   );
 }
