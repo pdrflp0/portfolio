@@ -33,7 +33,7 @@ export function ServiceDrawer({
 }: {
   id: ProjectId | null;
   /** abre já rolado até uma seção (ex.: a demo do Resíduo) */
-  focus?: "demo" | null;
+  focus?: "demo" | "deadlock" | null;
   github: GitHubSnapshot | null;
   onClose: () => void;
   onPlay: () => void;
@@ -96,9 +96,9 @@ export function ServiceDrawer({
     panel.scrollTop = 0;
     trackCaseStudy(shown);
     let jump: ReturnType<typeof setTimeout> | undefined;
-    if (focus === "demo") {
+    if (focus) {
       jump = setTimeout(() => {
-        panel.querySelector<HTMLElement>("#residuo-demo")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+        panel.querySelector<HTMLElement>(focus === "demo" ? "#residuo-demo" : "#wagering-deadlock")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
       }, reduce ? 0 : 450);
     }
     return () => {

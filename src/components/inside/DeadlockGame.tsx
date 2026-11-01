@@ -7,7 +7,7 @@ import { logEvent } from "@/lib/visit-log";
 
 type Phase = "ready" | "count" | "play" | "won" | "lost";
 
-const PULL = 0.065;
+const PULL = 0.12;
 
 export function DeadlockGame() {
   const { lang } = useLang();
@@ -56,7 +56,7 @@ export function DeadlockGame() {
     const tick = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
-      const rate = 0.32 + Math.min(0.3, ((now - started) / 1000) * 0.03);
+      const rate = 0.2 + Math.min(0.25, ((now - started) / 1000) * 0.025);
       posRef.current = Math.max(-1, posRef.current - rate * dt);
       setPos(posRef.current);
       if (posRef.current >= 1) {

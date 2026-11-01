@@ -16,6 +16,7 @@ import { Companion } from "./Companion";
 import { Portrait } from "./Portrait";
 import { ProjectVideo } from "./ProjectVideo";
 import { CountUp } from "@/components/CountUp";
+import { ContactSky } from "./ContactSky";
 
 export type NoclipOrigin = { x: number; y: number };
 export type NoclipHandler = (origin?: NoclipOrigin, via?: string) => void;
@@ -373,8 +374,9 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
         </section>
 
         {/* CONTATO */}
-        <section id="contact" data-reveal className="reveal scroll-mt-16 border-t border-line bg-ink text-paper">
-          <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
+        <section id="contact" data-reveal className="reveal relative scroll-mt-16 overflow-hidden border-t border-line bg-ink text-paper">
+          <ContactSky />
+          <div className="relative mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-paper/50">05 — {t.nav.contact}</p>
             <h2 data-spot="contact" data-spot-dark data-spot-x="0.6" className="mt-6 font-display text-[clamp(3rem,9vw,7rem)] leading-[0.92] tracking-[-0.03em]">
               {t.contact.title}

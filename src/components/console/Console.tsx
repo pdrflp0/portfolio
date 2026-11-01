@@ -17,6 +17,7 @@ export type ConsoleApi = {
   noclip: () => void;
   openService: (id: ProjectId) => void;
   openDemo: () => void;
+  openDeadlock: () => void;
   openArcade: () => void;
   /** física da página visível (superfície ou painel) */
   physics: (kind: "zero-g" | "demolish" | "collision-on" | "collision-off") => void;
@@ -29,7 +30,7 @@ type Line = { id: number; text: string; tone: Tone };
 const COMMANDS = [
   "help", "whoami", "ls", "open", "demo", "play", "status", "bugs", "cv", "contact", "hire",
   "achievements", "splits", "log", "lang", "noclip", "clear", "history", "exit",
-  "sv_gravity", "r_drawcollision", "cl_companion", "note",
+  "sv_gravity", "r_drawcollision", "cl_companion", "note", "deadlock",
 ] as const;
 
 type NoteStep = "msg" | "email" | "confirm" | "busy";
@@ -233,6 +234,7 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
             ["open <serviço>", pt ? "abre o estudo de caso" : "opens the case study"],
             ["demo", pt ? "reproduz o bug do Resíduo, passo a passo" : "reproduce the Resíduo bug, step by step"],
             ["play", pt ? "Space Invaders, só que com bugs" : "Space Invaders, but with bugs"],
+            ["deadlock", pt ? "cabo de guerra entre duas transações" : "tug of war between two transactions"],
             ["status", pt ? "CI e commits reais do GitHub" : "real CI and commits from GitHub"],
             ["bugs [post]", pt ? "diário de bugs (post-mortems)" : "bug journal (post-mortems)"],
             ["cv [pt|en]", pt ? "baixa o currículo" : "downloads the résumé"],
@@ -414,6 +416,11 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
             "rust",
           ),
         );
+        break;
+      case "deadlock":
+        print(L(pt ? "abrindo T1 e T2 na mesma carteira…" : "opening T1 and T2 on the same wallet…", "dim"));
+        api.openDeadlock();
+        onClose();
         break;
       case "note":
       case "recado":

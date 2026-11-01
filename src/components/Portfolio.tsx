@@ -69,7 +69,7 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
   const [mode, setMode] = useState<Mode>("surface");
   const [trace, setTrace] = useState<Trace | null>(null);
   const [selected, setSelected] = useState<ProjectId | null>(null);
-  const [focus, setFocus] = useState<"demo" | null>(null);
+  const [focus, setFocus] = useState<"demo" | "deadlock" | null>(null);
   const [consoleOpen, setConsoleOpen] = useState(false);
   const [arcadeOpen, setArcadeOpen] = useState(false);
   const [fromGithub, setFromGithub] = useState(false);
@@ -199,7 +199,7 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
   );
 
   const selectService = useCallback(
-    (id: ProjectId, focusOn: "demo" | null = null) => {
+    (id: ProjectId, focusOn: "demo" | "deadlock" | null = null) => {
       logEvent({ kind: "request", method: "GET", label: `/services/${id}${focusOn ? `#${focusOn}` : ""}`, status: 200 });
       setFocus(focusOn);
       setSelected(id);
@@ -250,6 +250,7 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
     noclip: () => toggle("console"),
     openService: (id) => whenInside(() => selectService(id)),
     openDemo: () => whenInside(() => selectService("residuo", "demo")),
+    openDeadlock: () => whenInside(() => selectService("wagering", "deadlock")),
     openArcade: () => whenInside(() => setArcadeOpen(true)),
     physics: (kind) => {
       if (kind === "collision-on" || kind === "collision-off") return drawCollision(kind === "collision-on");

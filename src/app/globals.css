@@ -674,3 +674,14 @@ html[data-textures="0"] .hero-scene .scene-player {
 @media (prefers-reduced-motion: reduce) {
   .duel-worker, .duel-today { animation: none; }
 }
+
+.contact-star { animation: contact-twinkle 2.6s steps(2) infinite; }
+@keyframes contact-twinkle { 50% { opacity: 0.25; } }
+.contact-drop { animation: contact-fall linear forwards; }
+@keyframes contact-fall {
+  from { transform: translateY(-20px) rotate(0deg); }
+  to { transform: translateY(110vh) rotate(180deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .contact-star { animation: none; }
+}
