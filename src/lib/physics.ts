@@ -2,12 +2,6 @@
 
 import gsap from "gsap";
 
-/*
- * A "física" da página: tirar a colisão dos blocos visíveis e deixá-los cair,
- * flutuar ou virar textura faltando — e depois remontar tudo no lugar.
- * Usada pelo cutucão no Pedro e pelos comandos sv_gravity, rm -rf e r_drawcollision.
- */
-
 const CANDIDATES = "h1,h2,h3,h4,p,li,dt,dd,pre,figure,img,svg,canvas,button,a,kbd,input,[data-block]";
 const IGNORE = "[data-companion],[data-console],[data-physics-ignore]";
 const MAX_BLOCKS = 140;
@@ -17,7 +11,6 @@ const rand = (a: number, b: number) => a + Math.random() * (b - a);
 
 let busy: gsap.core.Timeline | null = null;
 
-/** Blocos visíveis: as peças mais internas entre os candidatos, sem os elementos inline (que não aceitam transform). */
 function visibleBlocks(root: HTMLElement): HTMLElement[] {
   const vh = window.innerHeight;
   const all = [...root.querySelectorAll<HTMLElement>(CANDIDATES)].filter((el) => {
@@ -26,7 +19,6 @@ function visibleBlocks(root: HTMLElement): HTMLElement[] {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < vh;
   });
-  // um bloco que contém outros candidatos fica parado: quem cai são as peças de dentro
   const pieces = all.filter((el) => !all.some((other) => other !== el && el.contains(other)));
   return pieces.slice(0, MAX_BLOCKS);
 }
@@ -59,7 +51,6 @@ function rebuild(tl: gsap.core.Timeline, blocks: HTMLElement[], at = ">") {
   });
 }
 
-/** Tudo cai e se remonta. */
 export function collapse(root: HTMLElement) {
   const blocks = visibleBlocks(root);
   if (reduced()) return run((tl) => tl.to(blocks, { opacity: 0.2, duration: 0.15, yoyo: true, repeat: 1 }), blocks);
@@ -76,7 +67,6 @@ export function collapse(root: HTMLElement) {
   }, blocks);
 }
 
-/** sv_gravity 0: os blocos flutuam por alguns segundos e a gravidade volta. */
 export function zeroGravity(root: HTMLElement, seconds = 6) {
   const blocks = visibleBlocks(root);
   if (reduced()) return run((tl) => tl.to(blocks, { y: -6, duration: 0.3, yoyo: true, repeat: 1 }), blocks);
@@ -91,7 +81,6 @@ export function zeroGravity(root: HTMLElement, seconds = 6) {
   }, blocks);
 }
 
-/** rm -rf /: cada bloco vira textura faltando, cai e é reconstruído do backup. */
 export function demolish(root: HTMLElement) {
   const blocks = visibleBlocks(root);
   const clear = () => blocks.forEach((el) => el.classList.remove("demolished"));
@@ -115,7 +104,6 @@ export function demolish(root: HTMLElement) {
   );
 }
 
-/** r_drawcollision: mostra as caixas de colisão (o layout) de tudo. */
 export function drawCollision(on: boolean) {
   document.documentElement.classList.toggle("r-drawcollision", on);
 }

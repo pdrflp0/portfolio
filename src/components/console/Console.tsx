@@ -19,7 +19,6 @@ export type ConsoleApi = {
   openDemo: () => void;
   openDeadlock: () => void;
   openArcade: () => void;
-  /** física da página visível (superfície ou painel) */
   physics: (kind: "zero-g" | "demolish" | "collision-on" | "collision-off") => void;
   github: GitHubSnapshot | null;
 };
@@ -37,7 +36,6 @@ type NoteStep = "msg" | "email" | "confirm" | "busy";
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,24}$/;
 
 const PROMPT = "pedro@pdrflp:~$";
-
 
 function resolveService(arg: string): ProjectId | null {
   const a = arg.toLowerCase().replace(/[^a-z-]/g, "");
@@ -70,14 +68,12 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
   const returnFocus = useRef<HTMLElement | null>(null);
   const seq = useRef(0);
   const session = useRef<Span | null>(null);
-  // recado pelo terminal: mensagem → e-mail → confirmação
   const note = useRef<{ msg: string; email: string }>({ msg: "", email: "" });
   const [noteStep, setNoteStep] = useState<NoteStep | null>(null);
   const L = (text: string, tone: Tone = "text"): Line => ({ id: ++seq.current, text, tone });
 
   if (open && !mounted) setMounted(true);
 
-  // comandos pedidos de fora do console (o botão "deixar um recado" do contato)
   const runRef = useRef<(raw: string) => void>(() => {});
   useEffect(() => {
     if (!open) return;
@@ -94,7 +90,6 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
     };
   }, [open]);
 
-  // boas-vindas na primeira abertura
   useEffect(() => {
     if (!open || lines.length) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- texto inicial depende do idioma no momento da abertura
@@ -105,7 +100,6 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
      
   }, [open, lines.length, pt]);
 
-  // animação de abrir/fechar, como o console dos jogos
   useLayoutEffect(() => {
     const el = rootRef.current;
     if (!el) return;
@@ -169,7 +163,6 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
       } else if (res.status === 429) {
         print(L(pt ? "muitos recados hoje. tente amanhã ou mande e-mail." : "too many notes today. try tomorrow or send an email.", "warn"));
       } else {
-        // sem serviço de e-mail configurado: abre o app de e-mail com o recado pronto
         print(L(pt ? "abrindo seu app de e-mail com o recado pronto para enviar…" : "opening your email app with the note ready to send…", "warn"));
         unlock("pen-pal");
         const subject = pt ? "Recado pelo portfólio" : "Note from the portfolio";
@@ -563,7 +556,6 @@ export function Console({ open, onClose, api }: { open: boolean; onClose: () => 
           </div>
         ))}
       </div>
-      {/* atalhos para quem está no toque */}
       <div className="flex gap-1.5 overflow-x-auto border-t border-obs-line px-4 py-2 sm:hidden">
         {["help", "note", "whoami", "ls", "demo", "play", "status", "achievements", "noclip"].map((c) => (
           <button

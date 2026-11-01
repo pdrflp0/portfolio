@@ -48,7 +48,6 @@ export type AchievementId =
 
 export type Achievement = { id: AchievementId; title: L; desc: L; hint: L; icon: string[] };
 
-/** Ícones são bitmaps 8×8 ("#" = pixel aceso). */
 export const ACHIEVEMENTS: Achievement[] = [
   {
     id: "noclip",
@@ -516,14 +515,11 @@ export function useToasts() {
   return useSyncExternalStore(subscribe, () => toasts, () => NO_TOASTS);
 }
 
-/** Estudos de caso abertos nesta visita — os três principais destravam uma conquista. */
 const openedCases = new Set<string>();
 export function trackCaseStudy(id: string) {
   openedCases.add(id);
   if (["residuo", "wagering", "minha-cidade"].every((c) => openedCases.has(c))) unlock("case-studies");
 }
-
-/* ——— speedrun: cada visita é uma tentativa, cada conquista é um split ——— */
 
 export type Split = { id: AchievementId; t: number };
 export type Records = {
@@ -535,7 +531,6 @@ export type Records = {
 const RUN_KEY = "pf.speedrun";
 let splits: Split[] = [];
 let records: Records = { attempts: 0, bestAny: null, best: {} };
-/** recordes como estavam no início desta tentativa — base para os deltas */
 let previous: Records = records;
 let runStarted = false;
 let runSnapshot = { splits, records, previous };
@@ -550,7 +545,6 @@ function snapshot() {
   runSnapshot = { splits, records, previous };
 }
 
-/** Começa a tentativa desta visita (uma vez por carregamento de página). */
 export function startRun() {
   if (runStarted || typeof window === "undefined") return;
   runStarted = true;

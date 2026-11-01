@@ -1,6 +1,5 @@
 import { getContributions, LOGIN_RE } from "@/lib/contributions";
 
-/** GET /api/contributions?user=<login> — o ano de contribuições públicas de alguém no GitHub. */
 export async function GET(req: Request) {
   const user = new URL(req.url).searchParams.get("user")?.trim().replace(/^@/, "") ?? "";
   if (!LOGIN_RE.test(user)) return Response.json({ error: "invalid user" }, { status: 400 });

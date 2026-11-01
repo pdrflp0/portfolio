@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { RespawnGame } from "./RespawnGame";
 
-/** O 404: uma URL que não existe é, literalmente, sair do mapa. E dá para voltar jogando. */
 export function OffTheMap() {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-obs-0 px-5 py-12 font-mono text-obs-text">

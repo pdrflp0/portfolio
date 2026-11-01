@@ -12,12 +12,6 @@ import { ACHIEVEMENTS, unlock, useUnlocked } from "@/lib/achievements";
 import { logEvent } from "@/lib/visit-log";
 import { collapse } from "@/lib/physics";
 
-/*
- * Quando a cena da capa sai da tela, o Pedro sai do mapa junto: acompanha a rolagem,
- * pousa em cima das seções (data-spot) e comenta cada uma. Parado demais, dorme.
- * Cutucado cinco vezes, a página perde a colisão.
- */
-
 const IDLE_MS = 45_000;
 const POKES_TO_KNOCKOUT = 6;
 const CLICK_WINDOW = 450;
@@ -33,7 +27,6 @@ export function companionEnabled() {
 }
 
 type Props = {
-  /** a superfície está na tela (não estamos do lado de dentro) */
   active: boolean;
   rootRef: RefObject<HTMLElement | null>;
   heroRef: RefObject<HTMLElement | null>;
@@ -63,7 +56,6 @@ export function Companion({ active, rootRef, heroRef, onCommand }: Props) {
     langRef.current = lang;
   }, [lang]);
 
-  // ligado por padrão; `cl_companion 0` no console desliga
   useEffect(() => {
     const sync = () => setEnabled(companionEnabled() && !window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     sync();
@@ -71,7 +63,6 @@ export function Companion({ active, rootRef, heroRef, onCommand }: Props) {
     return () => window.removeEventListener(COMPANION_EVENT, sync);
   }, []);
 
-  // só existe um Pedro: enquanto a cena da capa está na tela, ele está lá
   useEffect(() => {
     const hero = heroRef.current;
     if (!hero) return;
@@ -123,11 +114,9 @@ export function Companion({ active, rootRef, heroRef, onCommand }: Props) {
       return lines[i % lines.length];
     };
 
-    /** ponto em cima do elemento, nas coordenadas da superfície */
     const perch = (el: HTMLElement) => {
       const r = el.getBoundingClientRect();
       const base = root.getBoundingClientRect();
-      // em tela estreita os textos ocupam a largura toda: ele fica na borda direita
       const fx = window.innerWidth < 640 ? 0.94 : Number(el.dataset.spotX ?? 0.85);
       const x = Math.min(Math.max(r.left - base.left + r.width * fx, 28), base.width - 28);
       return { x, y: r.top - base.top };
@@ -139,7 +128,6 @@ export function Companion({ active, rootRef, heroRef, onCommand }: Props) {
       let bestD = Infinity;
       for (const el of root.querySelectorAll<HTMLElement>("[data-spot]")) {
         const r = el.getBoundingClientRect();
-        // abaixo do cabeçalho fixo, com espaço para o boneco e o balão
         if (r.top < Math.max(vh * 0.24, 200) || r.top > vh * 0.78) continue;
         const d = Math.abs(r.top - vh * 0.42);
         if (d < bestD) {
@@ -170,7 +158,6 @@ export function Companion({ active, rootRef, heroRef, onCommand }: Props) {
       wrap.classList.toggle("companion-dark", spot?.dataset.spotDark !== undefined);
       if (spot && spot.getBoundingClientRect().top > 190) say(nextLine(spot.dataset.spot!));
       talkLater();
-      // a seção ainda pode estar terminando a animação de entrada: acerta o pouso
       setTimeout(() => {
         if (!spot || tl?.isActive()) return;
         const t = perch(spot);
@@ -181,7 +168,6 @@ export function Companion({ active, rootRef, heroRef, onCommand }: Props) {
     const moveTo = (target: { x: number; y: number }, fromTop = false) => {
       tl?.kill();
       if (fromTop) {
-        // longe demais para pular: cai do alto da tela
         p.x = target.x;
         p.y = target.y - Math.min(window.innerHeight * 0.6, 420);
         apply();
@@ -226,7 +212,6 @@ export function Companion({ active, rootRef, heroRef, onCommand }: Props) {
     const onScroll = () => {
       wake();
       schedule();
-      // o ponto subiu para baixo do cabeçalho: o balão sai de cena
       if (spot && !sleeping && spot.getBoundingClientRect().top < 190) say(null);
     };
     const idle = setInterval(() => {

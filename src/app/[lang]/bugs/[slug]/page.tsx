@@ -99,7 +99,6 @@ export default async function PostPage({ params }: PageProps<"/[lang]/bugs/[slug
             )}
           </aside>
 
-          {/* quem leu até aqui é quem mais interessa: o contato fica a um clique */}
           <section aria-labelledby="post-cta" className="mt-6 rounded-lg bg-ink p-6 text-paper sm:p-8">
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-paper/50">{d.cta.kicker}</p>
             <h2 id="post-cta" className="mt-3 font-display text-[2rem] leading-[1.05] tracking-tight sm:text-[2.4rem]">

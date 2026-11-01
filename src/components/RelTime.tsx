@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useLang } from "@/lib/i18n";
 
-/** "há 3 dias" calculado no cliente — no servidor sai a data fixa, sem divergir na hidratação. */
 export function RelTime({ iso, className }: { iso: string; className?: string }) {
   const { lang } = useLang();
   const [now, setNow] = useState<number | null>(null);

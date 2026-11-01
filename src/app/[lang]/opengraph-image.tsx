@@ -52,7 +52,6 @@ export default async function Image({ params }: { params: Promise<{ lang: string
           >
             {TITLE}
           </div>
-          {/* o ponto final é a textura faltando */}
           <div style={{ display: "flex", flexWrap: "wrap", width: 30, height: 30, marginLeft: 8, marginBottom: 26 }}>
             <div style={{ width: 15, height: 15, background: "#ff00dc" }} />
             <div style={{ width: 15, height: 15, background: "#000" }} />

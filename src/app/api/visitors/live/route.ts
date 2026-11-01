@@ -1,6 +1,5 @@
 import { kv, kvEnabled } from "@/lib/kv";
 
-/** POST /api/visitors/live — presença: quem pingou nos últimos 70 s está "aqui agora". */
 export async function POST(req: Request) {
   if (!kvEnabled) return Response.json({ enabled: false });
   const { id } = (await req.json().catch(() => ({}))) as { id?: string };

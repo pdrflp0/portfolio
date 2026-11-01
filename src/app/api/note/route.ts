@@ -1,20 +1,14 @@
 import { kv, kvEnabled, visitorHash } from "@/lib/kv";
 import { LINKS } from "@/content/site";
 
-/*
- * POST /api/note — o recado deixado pelo terminal do site chega no e-mail do Pedro
- * via Resend (plano gratuito). Sem RESEND_API_KEY, responde 503 e o terminal abre
- * o app de e-mail da pessoa com o recado pronto.
- */
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,24}$/;
 const LIMIT_PER_DAY = 5;
-const memory = new Map<string, number>(); // limite por instância quando não há banco
+const memory = new Map<string, number>();
 
 export async function POST(req: Request) {
   const body = (await req.json().catch(() => null)) as { message?: unknown; email?: unknown; website?: unknown } | null;
   const message = typeof body?.message === "string" ? body.message.trim() : "";
   const email = typeof body?.email === "string" ? body.email.trim() : "";
-  // campo isca: gente não preenche, robô preenche
   if (body?.website) return Response.json({ ok: true });
   if (message.length < 2 || message.length > 2000) return Response.json({ error: "message" }, { status: 400 });
   if (email && !EMAIL_RE.test(email)) return Response.json({ error: "email" }, { status: 400 });

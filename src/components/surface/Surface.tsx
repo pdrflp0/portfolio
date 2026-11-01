@@ -23,13 +23,10 @@ export type NoclipHandler = (origin?: NoclipOrigin, via?: string) => void;
 
 type Props = {
   onNoclip: NoclipHandler;
-  /** atravessa direto para o painel de segredos */
   onSecrets: (origin: NoclipOrigin) => void;
-  /** abre o terminal no comando note */
   onNote: () => void;
   hidden: boolean;
   fromGithub?: boolean;
-  /** estrelas reais de cada repositório (API do GitHub, com cache) */
   stars?: Partial<Record<string, number>>;
 };
 
@@ -38,8 +35,6 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
   const rootRef = useRef<HTMLDivElement | null>(null);
   const heroRef = useRef<HTMLDivElement>(null);
 
-  // Revela seções ao rolar e registra no log da visita quais foram vistas.
-  // Sem JS (ou antes dele), tudo fica visível: o estado escondido só vale com data-reveal.
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
@@ -115,7 +110,6 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
       </header>
 
       <main id="top">
-        {/* HERO */}
         <section className="relative isolate mx-auto max-w-6xl px-5 pt-10 sm:px-8 sm:pt-14 lg:pt-16">
           <div
             aria-hidden
@@ -181,7 +175,6 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
           </dl>
         </section>
 
-        {/* PROJETOS */}
         <section id="work" data-reveal className="reveal scroll-mt-16">
           <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
             <SectionLabel index="01" title={t.work.title} spot="work" />
@@ -273,7 +266,6 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
           </div>
         </section>
 
-        {/* DIÁRIO DE BUGS */}
         <section id="journal" data-reveal className="reveal scroll-mt-16 border-t border-line">
           <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
             <div className="flex flex-wrap items-end justify-between gap-6">
@@ -299,7 +291,6 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
           </div>
         </section>
 
-        {/* SOBRE */}
         <section id="about" data-reveal className="reveal scroll-mt-16 border-t border-line">
           <div className="mx-auto grid max-w-6xl gap-10 px-5 py-20 sm:px-8 sm:py-28 md:grid-cols-[16rem_1fr]">
             <div>
@@ -322,7 +313,6 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
           </div>
         </section>
 
-        {/* EXPERIÊNCIA + FORMAÇÃO + FERRAMENTAS */}
         <section id="experience" data-reveal className="reveal scroll-mt-16 border-t border-line">
           <div className="mx-auto grid max-w-6xl gap-10 px-5 py-20 sm:px-8 sm:py-28 md:grid-cols-[16rem_1fr]">
             <SectionLabel index="04" title={t.experience.title} />
@@ -373,7 +363,6 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
           </div>
         </section>
 
-        {/* CONTATO */}
         <section id="contact" data-reveal className="reveal relative scroll-mt-16 overflow-hidden border-t border-line bg-ink text-paper">
           <ContactSky />
           <div className="relative mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28">
@@ -463,7 +452,6 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
   );
 });
 
-/** Nem todo computador tem um app de e-mail configurado: copiar resolve sem depender do mailto. */
 function CopyEmail() {
   const { lang } = useLang();
   const [copied, setCopied] = useState(false);
@@ -504,7 +492,6 @@ function CopyEmail() {
   );
 }
 
-/** Estrela no GitHub: a contagem só aparece quando já existe alguma. */
 function StarLink({ repo, count }: { repo: string; count: number }) {
   const { lang } = useLang();
   return (
@@ -532,7 +519,6 @@ function StarLink({ repo, count }: { repo: string; count: number }) {
   );
 }
 
-/** Quantos segredos a pessoa já achou: o convite discreto para o lado de dentro. */
 function SecretsCounter({ onOpen }: { onOpen: (o: NoclipOrigin) => void }) {
   const { lang } = useLang();
   const found = useUnlocked().length;
@@ -550,7 +536,6 @@ function SecretsCounter({ onOpen }: { onOpen: (o: NoclipOrigin) => void }) {
   );
 }
 
-/** O "sv_cheats 0" do rodapé: ligar os cheats é outra porta. */
 function CheatsToggle({ onActivate }: { onActivate: (o: NoclipOrigin) => void }) {
   const [on, setOn] = useState(false);
   return (

@@ -2,21 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-/*
- * Retrato em pixel art (24×26) no mesmo estilo do Pedro da cena: cabelo volumoso,
- * sobrancelha grossa, bigode e cavanhaque, camisa preta. As expressões trocam só
- * as linhas do rosto que mudam.
- */
 const COLORS: Record<string, string> = {
-  H: "#1d1714", // cabelo, sobrancelha, barba
-  h: "#3a2c24", // reflexo do cabelo
-  S: "#e0b394", // pele
-  s: "#c99a7b", // sombra da pele
-  e: "#1d1714", // olho
-  w: "#f3f0e8", // brilho do olho / dentes
-  m: "#7a4436", // boca
-  T: "#1b1d21", // camisa
-  t: "#2a2d33", // gola
+  H: "#1d1714",
+  h: "#3a2c24",
+  S: "#e0b394",
+  s: "#c99a7b",
+  e: "#1d1714",
+  w: "#f3f0e8",
+  m: "#7a4436",
+  T: "#1b1d21",
+  t: "#2a2d33",
 };
 
 const BASE = [
@@ -29,17 +24,17 @@ const BASE = [
   ".HHHHSSSSSSSSSSSHHHHH...",
   ".HHHSSSSSSSSSSSSSHHHH...",
   ".HHSSSSSSSSSSSSSSSHHH...",
-  "..HSHHHHSSSSSHHHHSSH....", // 9: sobrancelhas
-  "..sSSSSSSSSSSSSSSSSs....", // 10
-  ".ssSSwesSSSSSSwesSSss...", // 11: olhos
-  ".ssSSeeSSSSSSSeeSSSss...", // 12
+  "..HSHHHHSSSSSHHHHSSH....",
+  "..sSSSSSSSSSSSSSSSSs....",
+  ".ssSSwesSSSSSSwesSSss...",
+  ".ssSSeeSSSSSSSeeSSSss...",
   "..sSSSSSSSsSSSSSSSSs....",
   "..SSSSSSSSsSSSSSSSSS....",
   "..SSSSSSSssSSSSSSSSS....",
-  "..SSSSHHHHHHHHHSSSSS....", // 16: bigode
-  "..SSSHHSSmmmmSSHHSSS....", // 17: boca
-  "..SSSHHSSSSSSSSHHSSS....", // 18
-  "...SSSHHHHHHHHHHSSS.....", // 19: cavanhaque
+  "..SSSSHHHHHHHHHSSSSS....",
+  "..SSSHHSSmmmmSSHHSSS....",
+  "..SSSHHSSSSSSSSHHSSS....",
+  "...SSSHHHHHHHHHHSSS.....",
   "....SSSHHHHHHHHSSS......",
   ".....SSSSHHHHSSSS.......",
   ".......sSSSSSSs.........",
@@ -73,7 +68,6 @@ const EDITS: Record<Expression, Record<number, string>> = {
   },
 };
 
-/** Junta pixels vizinhos da mesma cor num retângulo só. */
 function rects(rows: string[]) {
   const out: { x: number; y: number; w: number; c: string }[] = [];
   rows.forEach((row, y) => {
@@ -94,7 +88,6 @@ export function Portrait({ expression, label, className = "" }: { expression?: E
   const [hover, setHover] = useState(false);
   const [found, setFound] = useState(false);
 
-  // pisca de vez em quando
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let t: ReturnType<typeof setTimeout>;

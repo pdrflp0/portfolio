@@ -6,10 +6,6 @@ import { logEvent } from "@/lib/visit-log";
 const DAY_KEY = "pf.visit-day";
 let started = false;
 
-/**
- * Conta a visita (uma vez por dia) e mantém a presença "aqui agora" com um ping
- * a cada 45 s enquanto a aba está visível. Sem banco configurado, não faz nada.
- */
 export function startVisitorPresence() {
   if (started || typeof window === "undefined") return;
   started = true;

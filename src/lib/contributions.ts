@@ -5,11 +5,6 @@ export type Contributions = { login: string; total: number; days: ContribDay[] }
 
 export const LOGIN_RE = /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i;
 
-
-/**
- * O gráfico de contribuições público de um usuário (o mesmo do perfil do GitHub),
- * lido do HTML em github.com/users/<login>/contributions. Sem token: só dados públicos.
- */
 export async function getContributions(login: string): Promise<Contributions | null> {
   "use cache";
   cacheLife("hours");
@@ -27,7 +22,6 @@ export async function getContributions(login: string): Promise<Contributions | n
     return null;
   }
 
-  // cada dia: <td ... data-date="2026-10-17" id="contribution-day-component-x-y" data-level="2">
   const cells = new Map<string, { date: string; level: number }>();
   for (const m of html.matchAll(/<td\b[^>]*>/g)) {
     const tag = m[0];
@@ -36,7 +30,6 @@ export async function getContributions(login: string): Promise<Contributions | n
     const level = Number(tag.match(/data-level="(\d)"/)?.[1] ?? NaN);
     if (date && id && !Number.isNaN(level)) cells.set(id, { date, level });
   }
-  // a contagem de cada dia vem no tooltip: "3 contributions on October 17th." / "No contributions on …"
   const counts = new Map<string, number>();
   for (const m of html.matchAll(/<tool-tip\b[^>]*for="([^"]+)"[^>]*>([^<]*)<\/tool-tip>/g)) {
     const n = m[2].match(/^(\d[\d,]*) contributions?/);

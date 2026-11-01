@@ -9,14 +9,11 @@ import { useVisitLog } from "@/lib/visit-log";
 import type { GitHubSnapshot } from "@/lib/github";
 import { RelTime } from "@/components/RelTime";
 
-// coordenadas num viewBox 1000×H (o container mantém essa proporção). A altura do
-// cartão não encolhe com a largura (o texto tem tamanho fixo), então em painéis
-// estreitos o mapa fica mais alto para os cartões não se sobreporem.
 const W = 1000;
 const NODE_W = 230;
 const WIDE_H = 560;
 const NARROW_H = 760;
-const NARROW_BELOW = 840; // px de largura do container
+const NARROW_BELOW = 840;
 const GATEWAY_X = 500;
 const POS: Record<ProjectId, { x: number; row: number }> = {
   residuo: { x: 160, row: 0 },
@@ -26,7 +23,6 @@ const POS: Record<ProjectId, { x: number; row: number }> = {
   email: { x: 840, row: 1 },
   "space-invaders": { x: 840, row: 2 },
 };
-// linhas em 100/560, 280/560 e 460/560 da altura
 const rowY = (row: number, h: number) => (h * (100 + row * 180)) / 560;
 
 function edgePath(id: ProjectId, h: number) {
@@ -80,7 +76,6 @@ export function ServiceMap({
     return () => ro.disconnect();
   }, []);
 
-  // pacotes de eventos viajando do gateway para os serviços
   useEffect(() => {
     if (!active) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -142,7 +137,6 @@ export function ServiceMap({
 
   return (
     <>
-      {/* desktop/tablet: topologia */}
       <div ref={boxRef} className="relative mx-auto hidden w-full max-w-[1000px] sm:block" style={{ aspectRatio: `${W} / ${H}` }}>
         <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 size-full" aria-hidden>
           <defs>
@@ -164,7 +158,6 @@ export function ServiceMap({
           ))}
         </svg>
 
-        {/* gateway = este site, recebendo a visita */}
         <div
           className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center border border-obs-teal/50 bg-obs-2 text-center"
           style={{ left: `${(GATEWAY_X / W) * 100}%`, top: "50%", width: `${(156 / W) * 100}%`, height: `${(110 / H) * 100}%` }}
@@ -229,7 +222,6 @@ export function ServiceMap({
         })}
       </div>
 
-      {/* mobile: lista de serviços */}
       <ul className="divide-y divide-obs-line sm:hidden">
         {SERVICES.map((s) => (
           <li key={s.id}>

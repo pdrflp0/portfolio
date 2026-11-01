@@ -12,11 +12,6 @@ import type { GitHubSnapshot } from "@/lib/github";
 import { LangToggle } from "@/components/LangToggle";
 import { RelTime } from "@/components/RelTime";
 
-/*
- * O conteúdo do lado de dentro só é baixado e montado depois da primeira travessia:
- * quem fica na superfície (a maioria dos recrutadores) não paga por ele. Os chunks
- * são pré-carregados quando o navegador fica ocioso, então chegam antes do boot.
- */
 const loadMap = () => import("./ServiceMap");
 const loadTrace = () => import("./TracePanel");
 const loadSpeedrun = () => import("./Speedrun");
@@ -27,7 +22,6 @@ const loadDuel = () => import("./CommitDuel");
 const loadVisitors = () => import("./VisitorsMap");
 const loadTicTacToe = () => import("./TicTacToe");
 
-/** os títulos dos painéis se decodificam quando o painel liga */
 const Booted = createContext(false);
 
 const Skeleton = ({ h }: { h: string }) => <div className={`${h} animate-pulse bg-obs-2/40`} aria-hidden />;
@@ -52,7 +46,6 @@ type Props = {
   onExit: () => void;
   onConsole: () => void;
   onPlay: () => void;
-  /** algo abriu por cima (o jogo): o painel atrás fica inerte */
   modalOpen: boolean;
 };
 
@@ -63,7 +56,6 @@ export const Inside = forwardRef<HTMLDivElement, Props>(function Inside(
   const blocked = selected !== null || modalOpen;
   const { t, lang } = useLang();
   const unlocked = useUnlocked();
-  // monta o conteúdo na primeira vez que o painel é ativado e mantém montado depois
   const [booted, setBooted] = useState(false);
   if (active && !booted) setBooted(true);
 
@@ -92,7 +84,6 @@ export const Inside = forwardRef<HTMLDivElement, Props>(function Inside(
     >
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_top,rgb(110_158_173/0.08),transparent_60%)]" />
 
-      {/* barra superior */}
       <header data-boot inert={blocked || undefined} className="sticky top-0 z-10 border-b border-obs-line bg-obs-0/90 backdrop-blur">
         <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3 text-[11px] sm:px-6">
           <span className="flex items-center gap-2 text-obs-text">
@@ -199,7 +190,6 @@ export const Inside = forwardRef<HTMLDivElement, Props>(function Inside(
   );
 });
 
-/** Últimos commits reais de cada repositório, como um log de deploys. */
 function Deploys({ github, onSelect }: { github: GitHubSnapshot | null; onSelect: (id: ProjectId) => void }) {
   const { lang } = useLang();
   const pt = lang === "pt";

@@ -7,7 +7,6 @@ import { COSMETICS, setCosmetic, useLook } from "@/lib/cosmetics";
 import { Cosmetic, PedroParts } from "@/components/PedroSprite";
 import { useLang } from "@/lib/i18n";
 
-/** Os pixels acesos viram um único path (um elemento por ícone, não 64). */
 function pixelPath(rows: string[]) {
   let d = "";
   rows.forEach((row, y) => [...row].forEach((c, x) => c === "#" && (d += `M${x} ${y}h1v1h-1z`)));
@@ -23,7 +22,6 @@ export function PixelIcon({ rows, size = 32, on = true }: { rows: string[]; size
   );
 }
 
-/** Notificação no estilo Steam: sobe no canto, fica alguns segundos e some. */
 export function AchievementToasts() {
   const toasts = useToasts();
   return (
@@ -77,12 +75,10 @@ function Toast({ a, toastKey }: { a: Achievement; toastKey: number }) {
   );
 }
 
-/** Painel do lado de dentro: o que já foi achado e o que ainda falta (sem spoilers). */
 export function AchievementsPanel() {
   const { lang } = useLang();
   const unlocked = useUnlocked();
   const pct = Math.round((unlocked.length / ACHIEVEMENTS.length) * 100);
-  // os achados primeiro; das que faltam, só algumas dicas até a pessoa pedir todas
   const [all, setAll] = useState(false);
   const found = ACHIEVEMENTS.filter((a) => unlocked.includes(a.id));
   const missing = ACHIEVEMENTS.filter((a) => !unlocked.includes(a.id));

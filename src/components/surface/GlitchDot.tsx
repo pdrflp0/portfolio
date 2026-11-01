@@ -3,10 +3,6 @@
 import { useState } from "react";
 import type { NoclipOrigin } from "./Surface";
 
-/**
- * O ponto final do nome. Quase sempre é só um ponto — de vez em quando a
- * textura de baixo "vaza" (z-fighting). Clicar nele atravessa a parede.
- */
 export function GlitchDot({
   label,
   onActivate,
@@ -31,7 +27,6 @@ export function GlitchDot({
       }}
       className="glitch-dot relative ml-[0.04em] inline-block size-[0.15em] cursor-crosshair align-baseline"
     >
-      {/* área de clique maior que o ponto */}
       <span aria-hidden className="absolute -inset-[0.12em]" />
       <span aria-hidden className="absolute inset-0 bg-ink" />
       <span aria-hidden className={`missing-texture zfight absolute inset-0 ${hot ? "zfight-hot" : ""}`} />

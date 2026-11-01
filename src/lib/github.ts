@@ -45,7 +45,6 @@ type RepoApi = { html_url: string; pushed_at: string; stargazers_count: number }
 type CommitApi = { sha: string; html_url: string; commit: { message: string; author: { date: string } | null } };
 type RunsApi = { workflow_runs: { status: string; conclusion: string | null; html_url: string; created_at: string }[] };
 
-/** Primeira linha do commit; mensagens sem conteúdo ("...", ".") não vão para o painel. */
 function commitTitle(message: string) {
   const title = message.split("\n")[0].trim().slice(0, 90);
   return /[\p{L}\p{N}]/u.test(title) ? title : "";
@@ -77,10 +76,6 @@ async function repoLive(id: ProjectId): Promise<RepoLive | null> {
   };
 }
 
-/**
- * Foto do GitHub com cache de algumas horas: o painel mostra commits e CI reais
- * sem gastar o limite da API a cada visita. Sem rede, devolve null e o painel se adapta.
- */
 export async function getGitHubSnapshot(): Promise<GitHubSnapshot | null> {
   "use cache";
   cacheLife("hours");

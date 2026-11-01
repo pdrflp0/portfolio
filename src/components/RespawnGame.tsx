@@ -4,11 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { PEDRO_PIXELS } from "@/components/PedroSprite";
 import { unlock } from "@/lib/achievements";
 
-/*
- * O 404 jogável: o Pedro caiu do mapa e está despencando no void. Um bloco de
- * textura faltando é a única coisa sólida por aqui: quique ele cinco vezes e ele
- * volta para o mapa.
- */
 const W = 240;
 const H = 300;
 const GOAL = 5;
@@ -71,9 +66,7 @@ export function RespawnGame() {
       if (e.type === "pointerdown") start();
     };
     const onKey = (e: KeyboardEvent) => {
-      // teclas em links e botões são da página (ex.: Enter no "respawn"), não do jogo
       if (e.target instanceof Element && e.target.closest("a, button, input, textarea")) return;
-      // fora da partida, as setas continuam rolando a página
       if (phaseRef.current !== "play" && e.target !== canvas && e.key.startsWith("Arrow")) return;
       const down = e.type === "keydown";
       if (e.key === "ArrowLeft" || e.key === "a") keys.left = down;
@@ -96,7 +89,7 @@ export function RespawnGame() {
       ctx.translate(Math.round(x), Math.round(y));
       ctx.rotate(rot);
       ctx.scale(scale, scale);
-      ctx.translate(0, 23); // centro do boneco
+      ctx.translate(0, 23);
       for (const [c, rx, ry, w, h] of PEDRO_PIXELS) {
         ctx.fillStyle = c;
         ctx.fillRect(rx, ry, w, h);
@@ -116,7 +109,6 @@ export function RespawnGame() {
       last = now;
       const ph = phaseRef.current;
 
-      // o void passa para cima: a sensação de queda
       const drift = reduced ? 0 : 1;
       for (const s of stars) {
         s.y -= s.s * dt * drift * (ph === "won" ? -3 : 1);
@@ -128,7 +120,6 @@ export function RespawnGame() {
         if (s.y < -10) Object.assign(s, { y: H + 10, x: Math.random() * W });
       }
 
-      // o bloco segue o mouse/dedo, ou as setas
       if (keys.left) target -= 260 * dt;
       if (keys.right) target += 260 * dt;
       target = Math.max(PAD_W / 2, Math.min(W - PAD_W / 2, target));
@@ -143,7 +134,6 @@ export function RespawnGame() {
           p.vx *= -1;
           p.x = Math.max(12, Math.min(W - 12, p.x));
         }
-        // quique no bloco
         if (p.vy > 0 && p.y + 20 >= PAD_Y && p.y + 20 <= PAD_Y + 10 && Math.abs(p.x - pad) < PAD_W / 2 + 8) {
           hits++;
           setBounces(hits);
@@ -167,12 +157,10 @@ export function RespawnGame() {
         reset();
         set("ready");
       } else if (ph === "ready") {
-        // flutuando, esperando o jogador
         p.y = 70 + Math.sin(now / 400) * 6;
         p.rot = Math.sin(now / 700) * 0.15;
       }
 
-      // desenho
       ctx.fillStyle = "#07090c";
       ctx.fillRect(0, 0, W, H);
       for (const s of stars) {
@@ -181,7 +169,6 @@ export function RespawnGame() {
       }
       for (const s of shards) checker(s.x | 0, s.y | 0, s.z | 0, s.z | 0, 2);
       if (ph === "won") {
-        // o portal de volta ao mapa, no alto
         ctx.fillStyle = "rgba(255,79,216,0.25)";
         ctx.fillRect(W / 2 - 50, 0, 100, 6);
         checker(W / 2 - 40, 0, 80, 4, 2);

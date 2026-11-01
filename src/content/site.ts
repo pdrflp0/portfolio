@@ -28,7 +28,6 @@ export type Project = {
   repo: string;
   stack: string[];
   featured: boolean;
-  /** prévia em vídeo no card da superfície */
   video?: { src: string; poster: string; full: string };
 };
 
@@ -82,7 +81,6 @@ export const PROJECTS: Project[] = [
   },
 ];
 
-/** Grupos de habilidades — mesma organização do currículo. */
 export const SKILLS: { group: Record<Lang, string>; items: Record<Lang, string[]> }[] = [
   {
     group: { pt: "Java & Spring", en: "Java & Spring" },
@@ -166,7 +164,6 @@ export type Dict = {
   };
   about: {
     title: string;
-    /** primeiro parágrafo: [antes, porta escondida, depois] */
     lead: [string, string, string];
     body: string[];
   };

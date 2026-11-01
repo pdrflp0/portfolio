@@ -4,11 +4,9 @@ type L = Record<Lang, string>;
 
 export type ServiceMeta = {
   id: ProjectId;
-  /** nome do "processo" no painel */
   svc: string;
   status: "healthy" | "idle" | "arcade";
   metrics: { label: L; value: string }[];
-  /** eventos reais do domínio de cada projeto, que fluem pelo painel */
   events: string[];
 };
 

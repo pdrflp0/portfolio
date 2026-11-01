@@ -7,7 +7,6 @@ export type LogKind = "request" | "event" | "system";
 
 export type LogEntry = {
   id: number;
-  /** ms desde o início da navegação (performance.now) */
   t: number;
   kind: LogKind;
   label: string;
@@ -25,7 +24,6 @@ const listeners = new Set<() => void>();
 export function logEvent(entry: Omit<LogEntry, "id" | "t"> & { t?: number }) {
   if (typeof window === "undefined") return;
   const next: LogEntry = { id: ++seq, t: entry.t ?? performance.now(), ...entry };
-  // mantém a ordem cronológica: eventos medidos (paint, navegação) chegam depois de acontecer
   entries = [...entries, next].sort((a, b) => a.t - b.t).slice(-MAX);
   listeners.forEach((l) => l());
 }
@@ -47,7 +45,6 @@ export function useVisitLog() {
 
 let bootstrapped = false;
 
-/** Registra o que o navegador já sabe sobre o carregamento desta visita. */
 export function bootstrapVisitLog() {
   if (bootstrapped || typeof window === "undefined") return;
   bootstrapped = true;
@@ -60,7 +57,6 @@ export function bootstrapVisitLog() {
       kind: "request",
       t: nav.responseEnd,
       method: "GET",
-      // o documento carregado de fato (depois de navegar no cliente, location já é outra página)
       label: new URL(nav.name, location.href).pathname,
       status: nav.responseStatus || 200,
       ms: Math.round(nav.responseEnd - nav.requestStart),
@@ -95,7 +91,6 @@ export type Trace = {
   serverMs: number;
 };
 
-/** Chamada real à API route — devolve o que o servidor viu desta requisição. */
 export async function traceRequest(reason: string, parent?: Span | null): Promise<Trace | null> {
   const start = performance.now();
   const url = `/api/trace?reason=${encodeURIComponent(reason)}`;

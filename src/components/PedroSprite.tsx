@@ -1,4 +1,3 @@
-/** O Pedro em pixel: cabelo volumoso, sobrancelha grossa, bigode e cavanhaque, camisa preta. Pé em (0, 0). */
 export function PedroParts() {
   return (
     <>
@@ -39,7 +38,6 @@ export function PedroParts() {
   );
 }
 
-/** As mesmas formas, como dados, para desenhar o Pedro num canvas: [cor, x, y, largura, altura]. */
 export const PEDRO_PIXELS: [string, number, number, number, number][] = [
   ["#34404f", -5, -12, 4, 10],
   ["#15171b", -5, -2, 5, 2],

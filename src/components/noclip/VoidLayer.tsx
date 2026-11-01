@@ -1,4 +1,3 @@
-/** O que existe atrás da parede: primeiro a textura faltando, depois o vazio fora do mapa. */
 export function VoidLayer() {
   return (
     <>

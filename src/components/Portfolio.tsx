@@ -23,7 +23,6 @@ import { setGodMode } from "@/lib/cosmetics";
 
 const say = (text: string) => window.dispatchEvent(new CustomEvent("pf:say", { detail: text }));
 
-// console e jogo só carregam quando alguém abre: a superfície continua leve para o recrutador
 const Console = dynamic(() => import("./console/Console").then((m) => m.Console), { ssr: false });
 const Arcade = dynamic(() => import("./inside/Arcade").then((m) => m.Arcade), { ssr: false });
 
@@ -31,7 +30,6 @@ type Mode = "surface" | "entering" | "inside" | "exiting";
 
 const KONAMI = ["arrowup", "arrowup", "arrowdown", "arrowdown", "arrowleft", "arrowright", "arrowleft", "arrowright", "b", "a"];
 
-/** Cada porta para dentro destrava a própria conquista. */
 const DOOR_ACHIEVEMENT: Partial<Record<string, AchievementId>> = {
   glitch: "glitch-dot",
   player: "player",
@@ -41,14 +39,8 @@ const DOOR_ACHIEVEMENT: Partial<Record<string, AchievementId>> = {
   konami: "konami",
 };
 
-/*
- * O lado de dentro e o estudo de caso aberto ganham entradas no histórico: o "voltar"
- * do navegador (ou o gesto de voltar do celular) fecha o estudo de caso e depois
- * volta à superfície, em vez de tirar a pessoa do site.
- */
 type Layer = { pf?: "inside" | "drawer"; id?: ProjectId };
 const currentLayer = (): Layer => (window.history.state ?? {}) as Layer;
-/** O estudo de caso a abrir ao carregar: o da entrada do histórico (voltar, recarregar) ou o do link direto. */
 const caseOnLoad = (initialService: ProjectId | null): ProjectId | null => {
   const { pf, id } = currentLayer();
   return pf ? (pf === "drawer" ? (id ?? null) : null) : initialService;
@@ -78,14 +70,10 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
   const originRef = useRef<NoclipOrigin | undefined>(undefined);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const afterEnter = useRef<(() => void) | null>(null);
-  // "voltar" apertado no meio da travessia: sai assim que ela terminar
   const pendingBack = useRef(false);
   const godMode = useRef(false);
-  // quem pediu a saída que está voltando pelo histórico (botão, esc, console…)
   const leaveVia = useRef<string | null>(null);
   const exitRef = useRef<(via?: string) => void>(() => {});
-  // num link direto (/pt/residuo), ou voltando pelo histórico para um estudo de caso,
-  // a URL só passa a seguir o estado depois que o projeto abre
   const urlWaitsFor = useRef<ProjectId | null>(typeof window === "undefined" ? null : caseOnLoad(initialService));
 
   const surfaceRef = useRef<HTMLDivElement>(null);
@@ -150,7 +138,6 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
       tl.eventCallback("onComplete", () => {
         endSpan(span);
         go("surface");
-        // devolve o foco para quem abriu (o ponto, o botão, a cena…)
         const back = returnFocusRef.current;
         requestAnimationFrame(() => {
           if (back?.isConnected && back !== document.body) back.focus({ preventScroll: true });
@@ -164,7 +151,6 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
     exitRef.current = exit;
   }, [exit]);
 
-  /** Saída pedida pela interface: desfaz as entradas do histórico e o popstate faz a animação. */
   const leave = useCallback(
     (via: string) => {
       if (modeRef.current !== "inside") return;
@@ -185,7 +171,6 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
     [enter, leave],
   );
 
-  /** Garante que estamos do lado de dentro antes de abrir algo de lá. */
   const whenInside = useCallback(
     (fn: () => void, via = "console") => {
       if (modeRef.current === "inside") fn();
@@ -216,7 +201,6 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
     else setSelected(null);
   }, []);
 
-  // voltar/avançar do navegador: o histórico manda em qual camada está aberta
   useEffect(() => {
     const onPop = (e: PopStateEvent) => {
       const layer = (e.state ?? {}) as Layer;
@@ -232,7 +216,6 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
         if (modeRef.current === "surface") enter(undefined, "history");
         else setSelected(null);
       } else if (modeRef.current === "inside" || modeRef.current === "entering") {
-        // a entrada de um link direto (/pt/residuo) agora é a superfície
         const surfacePath = `/${lang}`;
         if (window.location.pathname !== surfacePath) {
           window.history.replaceState({}, "", surfacePath + window.location.search);
@@ -263,7 +246,6 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
     github,
   };
 
-  // a URL acompanha o projeto aberto: dá para copiar e mandar o link do estudo de caso
   useEffect(() => {
     if (urlWaitsFor.current) {
       if (selected !== urlWaitsFor.current) return;
@@ -281,10 +263,7 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
         : "Pedro Felipe — Back-end developer";
   }, [lang, selected]);
 
-  // link direto: mostra a superfície por um instante e atravessa até o projeto.
-  // Voltando pelo histórico (ou recarregando) com o painel aberto, reabre onde estava.
   useEffect(() => {
-    // o Next guarda a página anterior e a devolve intacta no "voltar": aí o painel já está aberto
     if (modeRef.current !== "surface") return;
     const restoring = Boolean(currentLayer().pf);
     const target = caseOnLoad(initialService);
@@ -300,7 +279,6 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // veio pelo portal do README do GitHub (?from=github): entrada especial e conquista
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("from") !== "github") return;
@@ -313,14 +291,11 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
     window.history.replaceState(window.history.state, "", window.location.pathname + (rest ? `?${rest}` : "") + window.location.hash);
   }, []);
 
-  // saindo para outra página (ex.: o diário de bugs) com o painel aberto, a página de destino precisa rolar;
-  // voltando para cá com o painel ainda aberto, a trava de rolagem volta junto
   useEffect(() => {
     if (modeRef.current === "inside") document.documentElement.classList.add("noclip-active");
     return () => document.documentElement.classList.remove("noclip-active");
   }, []);
 
-  // estado inicial das camadas escondidas — uma vez só: os efeitos rodam de novo quando a página volta do histórico
   const initialized = useRef(false);
   useEffect(() => {
     if (initialized.current) return;
@@ -330,7 +305,6 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
     bootstrapPageTrace();
     startRun();
     startVisitorPresence();
-    // segredos que dependem do relógio de quem visita
     const now = new Date();
     if (now.getHours() < 5) unlock("night-shift");
     if (now.getDay() === 5 && now.getHours() >= 18) unlock("friday-deploy");
@@ -345,7 +319,6 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
     } catch {}
   }, []);
 
-  // atalhos: ~ abre o console, digitar "noclip", Konami code e Esc para voltar
   useEffect(() => {
     let buffer = "";
     let konami = 0;
@@ -363,7 +336,6 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
         return;
       }
 
-      // como nos jogos: a tecla abaixo do Esc, em qualquer layout (no ABNT2 o ~ é tecla morta)
       const tilde =
         e.key === "~" ||
         e.key === "`" ||
@@ -425,7 +397,6 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
     return () => document.removeEventListener("visibilitychange", onVis);
   }, [lang]);
 
-  // a dica no console do navegador — e `noclip` funciona digitado lá também
   useEffect(() => {
     console.log(
       "%c▚ pdrflp%c\n\nalgo neste mapa não foi renderizado direito.\nsomething on this map didn't render right.\n\n%c> noclip%c   (ou aperte ~ na página / or press ~ on the page)\n%c> pedro.hire()%c   (recrutador? / hiring?)",
@@ -436,7 +407,6 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
       "font: 600 12px ui-monospace, monospace; color:#6e9ead",
       "font: 12px ui-monospace, monospace; color:#8b949e",
     );
-    // uma API de verdade no console, para quem abre o F12
     const pedro = {
       hire() {
         unlock("hired");
@@ -484,7 +454,6 @@ function Stage({ github, initialService }: Omit<PortfolioProps, "lang">) {
   const stars = Object.fromEntries(Object.entries(github?.repos ?? {}).map(([id, r]) => [id, r?.stars ?? 0]));
 
   const closeConsole = useCallback(() => setConsoleOpen(false), []);
-  /** abre o console já rodando um comando (o console carrega sob demanda, então vai numa fila) */
   const consoleRun = useCallback((cmd: string) => {
     const w = window as Window & { __pfConsole?: string[] };
     (w.__pfConsole ??= []).push(cmd);

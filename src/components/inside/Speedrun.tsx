@@ -28,7 +28,6 @@ function useClock(active: boolean) {
   return now;
 }
 
-/** Painel no estilo LiveSplit: tentativa, splits com delta contra o recorde e o tempo de Any%. */
 export function SpeedrunPanel({ active }: { active: boolean }) {
   const { lang } = useLang();
   const pt = lang === "pt";
@@ -99,7 +98,6 @@ export function SpeedrunPanel({ active }: { active: boolean }) {
   );
 }
 
-/** O "split" de Any% aparece grande logo depois do boot, como no fim de uma run. */
 export function SplitBanner({ show }: { show: boolean }) {
   const { lang } = useLang();
   const { splits, previous } = useRun();
@@ -115,7 +113,6 @@ export function SplitBanner({ show }: { show: boolean }) {
     return () => clearTimeout(a);
   }, [show, any]);
 
-  // o tempo de tela não depende de continuar do lado de dentro: saindo antes, o banner some e não fica preso
   useEffect(() => {
     if (!visible) return;
     const b = setTimeout(() => setVisible(false), 3800);

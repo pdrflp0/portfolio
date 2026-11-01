@@ -1,4 +1,3 @@
-/** `código`, **destaque** e *ênfase* em texto corrido — o suficiente para os post-mortems. */
 export function RichText({ text, codeClass = "" }: { text: string; codeClass?: string }) {
   const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g).filter(Boolean);
   return (

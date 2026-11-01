@@ -12,7 +12,6 @@ const ME = "pdrflp0";
 const LEVEL = ["#141a22", "rgb(110 158 173 / 0.35)", "rgb(110 158 173 / 0.6)", "rgb(110 158 173 / 0.95)", "#ff4fd8"];
 const RIVAL = ["#141a22", "rgb(184 117 94 / 0.35)", "rgb(184 117 94 / 0.6)", "rgb(184 117 94 / 0.95)", "#d9a441"];
 
-/** Agrupa os dias em colunas de semana (domingo no topo), como no GitHub. */
 function weeks(days: ContribDay[]) {
   const out: (ContribDay | null)[][] = [];
   let col: (ContribDay | null)[] = [];
@@ -109,7 +108,6 @@ function streakStats(days: ContribDay[]) {
   return { active, best, max };
 }
 
-/** Skyline: cada semana vira um prédio; andar = contribuição. Prédio mais alto vence. */
 function Skyline({ a, b }: { a: Contributions; b: Contributions }) {
   const wa = weeks(a.days).map((w) => w.reduce((n, d) => n + (d?.count ?? 0), 0));
   const wb = weeks(b.days).map((w) => w.reduce((n, d) => n + (d?.count ?? 0), 0));

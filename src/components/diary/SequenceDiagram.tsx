@@ -14,7 +14,6 @@ const TONE: Record<Tone, string> = {
   dim: "#6f737c",
 };
 
-/** Diagrama de sequência desenhado no servidor; as etapas aparecem em ordem quando entram na tela. */
 export function SequenceDiagram({ diagram, lang, caption }: { diagram: Diagram; lang: Lang; caption?: string }) {
   const n = diagram.lanes.length;
   const x = (i: number) => PAD + (i * (W - PAD * 2)) / (n - 1);
@@ -38,7 +37,6 @@ export function SequenceDiagram({ diagram, lang, caption }: { diagram: Diagram; 
           </defs>
 
           {diagram.lanes.map((lane, i) => {
-            // largura da caixa pelo texto (mono ≈ 7px por caractere em 11.5px)
             const w = Math.min((W - PAD * 2) / Math.max(1, n - 1) - 12, Math.max(104, lane[lang].length * 7.2 + 22));
             return (
             <g key={i}>

@@ -32,7 +32,6 @@ export function ServiceDrawer({
   onPlay,
 }: {
   id: ProjectId | null;
-  /** abre já rolado até uma seção (ex.: a demo do Resíduo) */
   focus?: "demo" | "deadlock" | null;
   github: GitHubSnapshot | null;
   onClose: () => void;
@@ -44,7 +43,6 @@ export function ServiceDrawer({
   const scrimRef = useRef<HTMLDivElement>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
 
-  // abrir: o conteúdo segue o id; fechar: mantém montado até a animação terminar
   if (id && id !== shown) setShown(id);
 
   useLayoutEffect(() => {

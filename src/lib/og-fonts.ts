@@ -1,6 +1,5 @@
 import { cacheLife } from "next/cache";
 
-/** Busca só os glifos usados de uma fonte do Google Fonts; sem rede, devolve null e a imagem usa a fonte padrão. */
 export async function loadGoogleFont(family: string, text: string) {
   "use cache";
   cacheLife("max");

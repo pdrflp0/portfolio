@@ -1,23 +1,14 @@
 import gsap from "gsap";
 
-/**
- * A transição "noclip": a superfície racha em fatias, a textura de baixo vaza
- * nas frestas, a câmera atravessa a parede e o painel do sistema dá boot.
- *
- * A superfície real nunca é animada: trabalhamos com cópias congeladas dela,
- * cortadas em faixas horizontais. Assim o React continua dono do DOM original.
- */
-
 export type NoclipLayers = {
   surface: HTMLElement;
-  host: HTMLElement; // container fixo onde as fatias são montadas
-  voidLayer: HTMLElement; // o "fora do mapa"
+  host: HTMLElement;
+  voidLayer: HTMLElement;
   inside: HTMLElement;
 };
 
 export type Origin = { x: number; y: number };
 
-/** Avisado a cada fase da animação (null = terminou) — vira span no trace do painel. */
 export type PhaseHook = (phase: string | null) => void;
 
 const prefersReducedMotion = () =>
@@ -27,10 +18,6 @@ function sliceCount() {
   return window.innerWidth < 640 ? 5 : 7;
 }
 
-/**
- * Uma cópia congelada só do que está na tela: seções fora da viewport são
- * descartadas, senão cada fatia renderizaria a página inteira.
- */
 function snapshot(surface: HTMLElement, scrollY: number) {
   const vh = window.innerHeight;
   const clone = surface.cloneNode(true) as HTMLElement;
@@ -41,7 +28,6 @@ function snapshot(surface: HTMLElement, scrollY: number) {
     const copy = copies[i];
     if (!copy) return;
     if (r.bottom < 0 || r.top > vh) {
-      // mantém a altura para o layout não subir, mas sem conteúdo
       copy.replaceChildren();
       copy.style.height = `${r.height}px`;
     }
@@ -56,7 +42,6 @@ function snapshot(surface: HTMLElement, scrollY: number) {
   clone.style.top = `${-scrollY}px`;
   clone.style.width = `${surface.offsetWidth}px`;
 
-  // o header é sticky: na cópia ele precisa ficar onde estava na tela
   const header = clone.querySelector("header");
   if (header) {
     header.style.position = "relative";
@@ -65,7 +50,6 @@ function snapshot(surface: HTMLElement, scrollY: number) {
   return clone;
 }
 
-/** Faixas de altura irregular — rachaduras não são uniformes. */
 function sliceBands(n: number) {
   const weights = Array.from({ length: n }, (_, i) => 0.6 + ((i * 7919) % 13) / 13);
   const total = weights.reduce((a, b) => a + b, 0);
@@ -110,7 +94,6 @@ function bootTargets(inside: HTMLElement) {
   };
 }
 
-/** superfície → por dentro */
 export function enterNoclip(layers: NoclipLayers, origin?: Origin, onPhase: PhaseHook = () => {}) {
   const { surface, host, voidLayer, inside } = layers;
   const scrollY = window.scrollY;
@@ -152,7 +135,6 @@ export function enterNoclip(layers: NoclipLayers, origin?: Origin, onPhase: Phas
       onPhase("z-fight");
     })
 
-    // 1. z-fighting: a parede treme de forma travada, sem easing
     .to(slices, {
       x: () => gsap.utils.random(-5, 5, 1),
       duration: 0.05,
@@ -166,7 +148,6 @@ export function enterNoclip(layers: NoclipLayers, origin?: Origin, onPhase: Phas
       onPhase("crack");
     })
 
-    // 2. a parede racha: faixas deslizam e a textura de baixo aparece nas frestas
     .to(slices, {
       x: (i) => tear[i],
       duration: 0.22,
@@ -175,7 +156,6 @@ export function enterNoclip(layers: NoclipLayers, origin?: Origin, onPhase: Phas
     })
     .to(slices, { x: (i) => tear[i] * 0.55, duration: 0.14, ease: "power2.out" })
 
-    // 3. a câmera atravessa: tudo cresce a partir do ponto de origem
     .addLabel("pass", "-=0.02")
     .call(() => onPhase("pass-through"), [], "pass")
     .to(checker, { autoAlpha: 0, duration: 0.12, ease: "steps(2)" }, "pass")
@@ -199,7 +179,6 @@ export function enterNoclip(layers: NoclipLayers, origin?: Origin, onPhase: Phas
       "pass",
     )
 
-    // 4. do outro lado: o painel do sistema dá boot
     .addLabel("boot", "pass+=0.95")
     .call(() => onPhase("boot"), [], "boot")
     .set(inside, { autoAlpha: 1 }, "boot")
@@ -232,7 +211,6 @@ export function enterNoclip(layers: NoclipLayers, origin?: Origin, onPhase: Phas
   return { tl, scrollY };
 }
 
-/** por dentro → superfície (a mesma viagem, de volta) */
 export function exitNoclip(layers: NoclipLayers, scrollY: number, origin?: Origin, onPhase: PhaseHook = () => {}) {
   const { surface, host, voidLayer, inside } = layers;
   const o = origin ?? { x: window.innerWidth / 2, y: window.innerHeight * 0.42 };
@@ -253,7 +231,6 @@ export function exitNoclip(layers: NoclipLayers, scrollY: number, origin?: Origi
     return tl;
   }
 
-  // a superfície precisa estar posicionada no scroll antigo para ser copiada
   lockScroll(false);
   window.scrollTo({ top: scrollY, behavior: "instant" });
   lockScroll(true);
@@ -283,7 +260,6 @@ export function exitNoclip(layers: NoclipLayers, scrollY: number, origin?: Origi
     .set(grids, { autoAlpha: 1 })
     .set(host, { autoAlpha: 1 })
 
-    // o painel desliga
     .call(() => onPhase("shutdown"))
     .to([...panels].reverse(), {
       clipPath: "inset(0% 0% 100% 0%)",
@@ -294,7 +270,6 @@ export function exitNoclip(layers: NoclipLayers, scrollY: number, origin?: Origi
     .to(inside, { autoAlpha: 0, duration: 0.2 }, "-=0.15")
     .set(panels, { clearProps: "clipPath" })
 
-    // a câmera volta pela parede
     .addLabel("back", "-=0.1")
     .call(() => onPhase("pass-back"), [], "back")
     .fromTo(
@@ -309,7 +284,6 @@ export function exitNoclip(layers: NoclipLayers, scrollY: number, origin?: Origi
     .to(grids, { autoAlpha: 0, duration: 0.25 }, "back+=0.65")
     .set(checker, { autoAlpha: 1 }, "back+=0.7")
 
-    // as frestas se fecham num estalo
     .call(() => onPhase("seal"), [], "back+=0.78")
     .to(slices, { x: (i) => tear[i], duration: 0.1, ease: "steps(2)" }, "back+=0.78")
     .call(() => wall.classList.remove("noclip-rgb"))

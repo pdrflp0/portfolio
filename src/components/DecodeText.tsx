@@ -4,10 +4,6 @@ import { useEffect, useRef, useState } from "react";
 
 const GLYPHS = "0123456789abcdef<>/$#*+=_{}[]";
 
-/**
- * Texto que se "decodifica": começa como lixo hexadecimal e cada letra trava no lugar,
- * da esquerda para a direita. Roda quando `run` liga e quando o texto muda (troca de idioma).
- */
 export function DecodeText({ text, run, duration = 650 }: { text: string; run: boolean; duration?: number }) {
   const [shown, setShown] = useState(text);
   const frame = useRef(0);

@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { Lang } from "@/content/site";
 import { DIARY } from "@/content/bugs";
 
-/** Cabeçalho das páginas do diário: mesmo papel e tipografia da superfície. */
 export function DiaryHeader({ lang, path }: { lang: Lang; path: string }) {
   const other: Lang = lang === "pt" ? "en" : "pt";
   return (

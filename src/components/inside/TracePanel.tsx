@@ -21,7 +21,6 @@ export function fmtMs(ms: number) {
 
 type Row = { span: Span; depth: number; hasChildren: boolean };
 
-/** Visão em cascata no estilo do Jaeger: uma lista de traces e os spans do trace escolhido. */
 export function TracePanel() {
   const { lang } = useLang();
   const pt = lang === "pt";
@@ -32,7 +31,6 @@ export function TracePanel() {
   const [now, setNow] = useState(0);
 
   const roots = useMemo(() => spans.filter((s) => s.parentId === null).sort((a, b) => b.start - a.start), [spans]);
-  // sem escolha manual, segue o trace mais recente
   const traceId = picked ?? roots[0]?.traceId ?? null;
   const traceSpans = useMemo(() => spans.filter((s) => s.traceId === traceId), [spans, traceId]);
   const running = traceSpans.some((s) => s.end === null);
@@ -57,7 +55,6 @@ export function TracePanel() {
       for (const s of (children.get(parent) ?? []).sort((a, b) => a.start - b.start)) {
         const kids = children.get(s.id) ?? [];
         out.push({ span: s, depth, hasChildren: kids.length > 0 });
-        // grupos de assets começam fechados: são muitos arquivos
         const closed = collapsed.has(s.id) !== (s.kind === "asset" && depth === 1);
         if (!closed) walk(s.id, depth + 1);
       }
@@ -86,7 +83,6 @@ export function TracePanel() {
 
   return (
     <div className="text-[11px]">
-      {/* lista de traces */}
       <ol className="obs-scroll max-h-[7.5rem] overflow-y-auto border-b border-obs-line" aria-label={pt ? "Traces desta visita" : "Traces of this visit"}>
         {roots.map((r) => {
           const count = spans.filter((s) => s.traceId === r.traceId).length;
@@ -114,7 +110,6 @@ export function TracePanel() {
         })}
       </ol>
 
-      {/* cascata */}
       <div className="px-4 pb-3 pt-2">
         <div className="grid grid-cols-[minmax(0,40%)_1fr] gap-3 border-b border-obs-line pb-1 text-[10px] text-obs-dim">
           <span className="truncate">trace {traceId.slice(0, 8)}…</span>

@@ -2,10 +2,6 @@
 
 import type { NoclipOrigin } from "./Surface";
 
-/**
- * Um trecho do texto que parece texto — até o cursor passar por cima.
- * "Sair dos limites do mapa" leva, literalmente, para fora do mapa.
- */
 export function MapDoor({
   children,
   onActivate,

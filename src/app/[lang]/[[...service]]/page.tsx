@@ -4,7 +4,6 @@ import { Portfolio } from "@/components/Portfolio";
 import { DICT, LANGS, PROJECTS, isLang, type Lang, type ProjectId } from "@/content/site";
 import { getGitHubSnapshot } from "@/lib/github";
 
-/** /pt, /en e um link direto por projeto: /pt/residuo abre o estudo de caso já do lado de dentro. */
 export function generateStaticParams() {
   return LANGS.flatMap((lang) => [{ lang, service: [] as string[] }, ...PROJECTS.map((p) => ({ lang, service: [p.id] }))]);
 }
@@ -50,7 +49,6 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/[[...servi
       description,
       siteName: "Pedro Felipe",
       url: `/${lang}${suffix}`,
-      // o openGraph da página substitui o herdado do layout: a imagem precisa vir junto
       images: [{ url: `/${lang}/opengraph-image`, width: 1200, height: 630, alt: title }],
     },
   };

@@ -1,6 +1,5 @@
 import type { Lang } from "./site";
 
-/** Falas do Pedro em pixel em cada ponto da página (data-spot). */
 export type SpotId =
   | "work"
   | "residuo"

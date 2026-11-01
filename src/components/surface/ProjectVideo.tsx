@@ -2,10 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 
-/**
- * Prévia em vídeo de um projeto: só baixa perto da tela, só toca enquanto está
- * visível e, com movimento reduzido, fica parada com controles.
- */
 export function ProjectVideo({ src, poster, label }: { src: string; poster: string; label: string }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [near, setNear] = useState(false);

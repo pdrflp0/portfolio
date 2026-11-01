@@ -6,7 +6,6 @@ import { useLang } from "@/lib/i18n";
 
 type Stats = { enabled: boolean; total?: number; countries?: Record<string, number>; now?: number };
 
-/** Pedaços horizontais de pixels do mesmo país: poucos retângulos em vez de 7 mil. */
 function useRuns() {
   return useMemo(() => {
     const runs: { x: number; y: number; w: number; code: string }[] = [];
@@ -24,7 +23,6 @@ function useRuns() {
   }, []);
 }
 
-/** Mapa-múndi em pixel: cada país aceso é um país de onde alguém abriu o site. */
 export function VisitorsMap({ active, region }: { active: boolean; region?: string }) {
   const { lang } = useLang();
   const pt = lang === "pt";

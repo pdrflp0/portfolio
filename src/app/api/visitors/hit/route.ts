@@ -1,9 +1,5 @@
 import { kv, kvEnabled, visitorHash } from "@/lib/kv";
 
-/**
- * POST /api/visitors/hit — conta a visita uma vez por dia por visitante. O país vem
- * do cabeçalho da Vercel; o IP vira um hash que expira em pouco mais de um dia.
- */
 export async function POST(req: Request) {
   if (!kvEnabled) return Response.json({ enabled: false });
   const country = req.headers.get("x-vercel-ip-country")?.toUpperCase();

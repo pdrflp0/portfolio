@@ -2,12 +2,6 @@
 
 import { useSyncExternalStore } from "react";
 
-/**
- * Um tracer mínimo no navegador, no formato que se vê no Jaeger: cada interação
- * é um trace com spans aninhados. Os tempos são reais (performance.now e as APIs
- * de Navigation/Resource Timing); nada é inventado para o desenho ficar bonito.
- */
-
 export type SpanKind = "page" | "net" | "render" | "interaction" | "server" | "asset";
 
 export type Span = {
@@ -56,7 +50,6 @@ export function endSpan(span: Span | null | undefined, opts: { end?: number; att
   emit();
 }
 
-/** Span já completo (início e fim conhecidos), útil para dados de Timing. */
 export function addSpan(
   name: string,
   kind: SpanKind,
@@ -69,13 +62,11 @@ export function addSpan(
   return s;
 }
 
-/** Um instante (span de duração zero), como um comando digitado. */
 export function markSpan(name: string, kind: SpanKind, parent?: Span | null, attrs?: Span["attrs"]) {
   const now = performance.now();
   return addSpan(name, kind, now, now, { parent, attrs });
 }
 
-/** Sequência de fases: cada chamada fecha a fase anterior e abre a próxima. */
 export function phases(parent: Span, kind: SpanKind = "render") {
   let current: Span | null = null;
   return (name: string | null) => {
@@ -92,8 +83,6 @@ const EMPTY: Span[] = [];
 export function useSpans() {
   return useSyncExternalStore(subscribe, () => spans, () => EMPTY);
 }
-
-/* ——— o carregamento da página como trace ——— */
 
 let bootstrapped = false;
 
@@ -125,7 +114,6 @@ export function bootstrapPageTrace() {
     const fcp = performance.getEntriesByType("paint").find((p) => p.name === "first-contentful-paint");
     if (fcp) addSpan("first-contentful-paint", "render", fcp.startTime, fcp.startTime, { parent: root });
 
-    // assets agrupados por tipo, como os spans de um serviço chamando outros
     const groups: Record<string, PerformanceResourceTiming[]> = {};
     for (const r of performance.getEntriesByType("resource") as PerformanceResourceTiming[]) {
       if (r.startTime > end) continue;
@@ -162,7 +150,6 @@ export function bootstrapPageTrace() {
   else window.addEventListener("load", () => setTimeout(build, 0), { once: true });
 }
 
-/** Spans de rede de uma requisição já feita, com o tempo do servidor vindo do header Server-Timing. */
 export function spansFromResource(url: string, parent: Span) {
   const entries = performance.getEntriesByName(new URL(url, location.href).href) as PerformanceResourceTiming[];
   const r = entries[entries.length - 1];
@@ -171,7 +158,6 @@ export function spansFromResource(url: string, parent: Span) {
     const ttfb = addSpan("request → first byte", "net", r.requestStart, r.responseStart, { parent });
     const handler = r.serverTiming?.find((t) => t.name === "handler");
     if (handler) {
-      // o navegador só sabe a duração; a posição dentro da espera é estimada (centralizada)
       const wait = r.responseStart - r.requestStart;
       const s = r.requestStart + Math.max(0, (wait - handler.duration) / 2);
       addSpan("route handler (server)", "server", s, s + handler.duration, {

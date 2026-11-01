@@ -1,6 +1,5 @@
 import { headers } from "next/headers";
 
-// Devolve o que o servidor enxergou desta requisição: o visitante vê o próprio "back-end".
 export async function GET(request: Request) {
   const start = performance.now();
   const h = await headers();
@@ -19,7 +18,6 @@ export async function GET(request: Request) {
   };
   body.serverMs = Math.round((performance.now() - start) * 100) / 100;
 
-  // Server-Timing deixa o navegador medir quanto tempo o handler levou (aparece no trace do painel)
   return Response.json(body, {
     headers: { "cache-control": "no-store", "server-timing": `handler;dur=${body.serverMs};desc="api/trace"` },
   });

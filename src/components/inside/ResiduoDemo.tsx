@@ -25,11 +25,6 @@ type State = {
 
 const INITIAL: State = { step: 0, row: null, msg: "none", tombstone: false, confirmed: false, events: [], verdict: null };
 
-/**
- * O cenário held-update-after-delete do Resíduo, simulado no navegador.
- * Mesma sequência, mesmos códigos e o mesmo critério de veredito: só leituras
- * feitas depois da exclusão confirmada contam como evidência.
- */
 export function ResiduoDemo() {
   const { lang } = useLang();
   const pt = lang === "pt";
@@ -95,7 +90,6 @@ export function ResiduoDemo() {
     setS(INITIAL);
   };
 
-  // cada etapa vira um span no trace do painel
   useEffect(() => {
     if (s.step === 0) {
       if (runSpan.current?.end === null) endSpan(runSpan.current, { attrs: { verdict: "aborted" } });
@@ -119,7 +113,6 @@ export function ResiduoDemo() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s.step]);
 
-  // efeitos do veredito: conquista, log e a "ressurreição" com textura faltando
   useEffect(() => {
     if (!s.verdict) return;
     logEvent({ kind: "event", label: `residuo demo ${mode}`, detail: s.verdict });
@@ -137,7 +130,6 @@ export function ResiduoDemo() {
     }
   }, [s.step, mode]);
 
-  // modo automático: um passo a cada 900ms
   useEffect(() => {
     if (!auto) return;
     if (s.step >= STEPS.length) {
@@ -160,7 +152,6 @@ export function ResiduoDemo() {
 
   return (
     <div className="border border-obs-line bg-obs-0/60">
-      {/* modo */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-obs-line px-4 py-3">
         <div role="radiogroup" aria-label={pt ? "Modo do serviço" : "Service mode"} className="flex border border-obs-line text-[11px]">
           {(["vulnerable", "guarded"] as const).map((m) => (
@@ -179,7 +170,6 @@ export function ResiduoDemo() {
         <span className="text-[10px] text-obs-dim">held-update-after-delete · seed 42</span>
       </div>
 
-      {/* estado: cliente B, consumidor, banco */}
       <div className="grid grid-cols-1 gap-px bg-obs-line sm:grid-cols-3">
         <Lane title={pt ? "fila (cliente B offline)" : "queue (client B offline)"}>
           <div ref={msgRef}>
@@ -224,7 +214,6 @@ export function ResiduoDemo() {
         </Lane>
       </div>
 
-      {/* evidência */}
       <ol ref={logRef} className="obs-scroll max-h-44 min-h-[7.5rem] space-y-1 overflow-y-auto border-t border-obs-line px-4 py-3 text-[11px]" aria-live="polite">
         {s.events.length === 0 && <li className="text-obs-dim">{pt ? "nenhuma etapa executada" : "no steps run yet"}</li>}
         {s.events.map((e) => (
@@ -257,7 +246,6 @@ export function ResiduoDemo() {
         </div>
       )}
 
-      {/* controles */}
       <div className="flex flex-wrap items-center gap-2 border-t border-obs-line px-4 py-3 text-[12px]">
         {!done ? (
           <>

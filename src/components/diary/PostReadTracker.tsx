@@ -7,7 +7,6 @@ import { AchievementToasts } from "@/components/achievements/Achievements";
 import { LangProvider } from "@/lib/i18n";
 import type { Lang } from "@/content/site";
 
-/** Chegar ao fim de um post-mortem destrava uma conquista (e entra no log da visita). */
 export function PostReadTracker({ slug, lang }: { slug: string; lang: Lang }) {
   const ref = useRef<HTMLDivElement>(null);
 

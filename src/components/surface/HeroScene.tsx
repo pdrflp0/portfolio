@@ -13,19 +13,12 @@ const TEXTURED = ".scene-floor, .scene-wall-l, .scene-wall-r, .scene-window, .sc
 const GRAFFITI = "// TODO: fix later";
 const IDLE_MS = 30_000;
 
-/**
- * Um pequeno mapa isométrico: o quarto onde tudo começou. O jogador digita no
- * PC, anda até a parede com a textura quebrada, atravessa ela (z-fighting de
- * verdade: jogador e parede disputando a mesma profundidade) e depois cai pela
- * borda do mapa. Clicar no jogador ou na textura quebrada atravessa a página.
- */
-
-const T = 34; // tamanho de um tile em px
-const C = 0.866; // cos 30°
+const T = 34;
+const C = 0.866;
 const OX = 230;
 const OY = 100;
-const N = 7; // o quarto tem N×N tiles
-const H = 2.4; // altura das paredes
+const N = 7;
+const H = 2.4;
 
 type V3 = [number, number, number];
 
@@ -33,12 +26,10 @@ function P(x: number, y: number, z = 0): [number, number] {
   return [OX + (x - y) * T * C, OY + (x + y) * T * 0.5 - z * T];
 }
 
-/** posição no formato do HUD, com sinal e largura fixa */
 const fmt = (n: number) => (n < 0 ? "-" : " ") + Math.abs(n).toFixed(2);
 
 const pts = (...vs: V3[]) => vs.map((v) => P(...v).map((n) => n.toFixed(1)).join(",")).join(" ");
 
-/** As três faces visíveis de uma caixa (topo, face +y, face +x). */
 function Box({ at, size, className = "" }: { at: V3; size: V3; className?: string }) {
   const [x, y, z] = at;
   const [dx, dy, dz] = size;
@@ -64,7 +55,6 @@ export function HeroScene({
 }: {
   onNoclip: (o: NoclipOrigin, via: "player" | "seam") => void;
   paused: boolean;
-  /** chegou pelo link do GitHub: o jogador entra caindo pelo portal */
   fromGithub?: boolean;
 }) {
   const { t } = useLang();
@@ -78,12 +68,10 @@ export function HeroScene({
   const hoverRef = useRef(false);
   const visibleRef = useRef(true);
   const pausedRef = useRef(paused);
-  // a cena só começa a andar depois do carregamento, para não disputar a thread principal
   const readyRef = useRef(false);
   const fromGithubRef = useRef(fromGithub);
   const portalRef = useRef<SVGPolygonElement>(null);
   const introRef = useRef<((done: () => void) => void) | null>(null);
-  // mensagem da legenda: a ponte entre o portfólio e o GitHub
   const [hud, setHud] = useState<"joined" | "left" | null>(null);
   const [tex, setTex] = useState<"ready" | "wire" | number>("ready");
   const [graffiti, setGraffiti] = useState(0);
@@ -177,7 +165,6 @@ export function HeroScene({
       player.setAttribute("transform", `translate(${X.toFixed(2)} ${Y.toFixed(2)})`);
       sprite.setAttribute("transform", `scale(${facing} 1)`);
       player.style.opacity = String(g ? (Math.random() > 0.35 ? s.o : 0.25) : s.o);
-      // z-fighting: a parede e o jogador disputam o mesmo plano
       overlay.style.opacity = g ? (Math.random() > 0.5 ? "1" : "0") : "0";
     };
     apply();
@@ -186,7 +173,6 @@ export function HeroScene({
       player.dataset.state = state;
     };
 
-    // HUD estilo cl_showpos: posição, velocidade e fps reais
     let frames = 0;
     let fps = 60;
     let last = performance.now();
@@ -219,7 +205,7 @@ export function HeroScene({
       };
     }
 
-    const SPEED = 1.7; // tiles por segundo
+    const SPEED = 1.7;
     const tl = gsap.timeline({ repeat: -1, onUpdate: apply });
     const at = { x: DESK[0], y: DESK[1] };
     const walk = (x: number, y: number) => {
@@ -232,15 +218,12 @@ export function HeroScene({
     };
     const stop = () => tl.set(s, { vel: 0 });
 
-    // 1. no PC
     tl.call(() => setState("type")).to({}, { duration: 2.8 });
-    // 2. até a parede com a textura quebrada
     walk(2.4, DESK[1]);
     walk(2.4, SEAM[1]);
     walk(SEAM[0], SEAM[1]);
     stop();
     tl.call(() => setState("idle")).to({}, { duration: 0.35 });
-    // 3. atravessa: o jogador e a parede brigam pelo mesmo pixel
     tl.call(() => setState("glitch"))
       .set(s, { glitch: 1 })
       .to(s, { x: -0.18, duration: 1.1, ease: "steps(7)" })
@@ -249,7 +232,6 @@ export function HeroScene({
       .call(() => setState("idle"))
       .to({}, { duration: 0.4 });
     at.x = SEAM[0];
-    // 4. até a borda do mapa… e cai
     walk(2.1, SEAM[1]);
     walk(2.1, 5.7);
     walk(5.6, 5.7);
@@ -261,12 +243,10 @@ export function HeroScene({
       .set(s, { vel: 0 })
       .to(s, { z: -4.5, duration: 0.75, ease: "power2.in" })
       .to(s, { o: 0, duration: 0.25 }, "<0.5")
-      // saiu do mapa: a legenda aponta para a outra dimensão
       .call(() => {
         setHud("left");
         gsap.delayedCall(3.4, () => setHud((h) => (h === "left" ? null : h)));
       });
-    // 5. respawn no PC
     tl.set(s, { x: DESK[0], y: DESK[1], z: 0 })
       .call(() => {
         at.x = DESK[0];
@@ -281,7 +261,6 @@ export function HeroScene({
       })
       .to(s, { o: 1, duration: 0.4, ease: "steps(5)" });
 
-    // entrada pelo portal: cai do alto até o PC antes da rotina começar
     introRef.current = (done) => {
       const portal = portalRef.current;
       s.z = 5.5;
@@ -332,7 +311,6 @@ export function HeroScene({
     };
   }, [sync]);
 
-  // pausa quando a cena sai da tela, a aba some ou a superfície não está ativa
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
@@ -377,7 +355,6 @@ export function HeroScene({
           </linearGradient>
         </defs>
 
-        {/* chão */}
         <polygon className="scene-floor" points={pts([0, 0, 0], [N, 0, 0], [N, N, 0], [0, N, 0])} />
         <g className="scene-grid">
           {Array.from({ length: N - 1 }, (_, i) => i + 1).map((i) => (
@@ -388,7 +365,6 @@ export function HeroScene({
           ))}
         </g>
 
-        {/* paredes */}
         <polygon className="scene-wall-l" points={pts([0, 0, 0], [0, N, 0], [0, N, H], [0, 0, H])} />
         <polygon className="scene-wall-r" points={pts([0, 0, 0], [N, 0, 0], [N, 0, H], [0, 0, H])} />
         <g className="scene-seams">
@@ -403,7 +379,6 @@ export function HeroScene({
         <polyline className="scene-edge" points={pts([0, N, H], [0, 0, H], [N, 0, H])} />
         <line className="scene-edge" x1={lx0} y1={ly0} x2={P(0, 0, 0)[0]} y2={P(0, 0, 0)[1]} />
 
-        {/* a textura quebrada — também é uma porta */}
         <polygon
           className="scene-seam zfight-scene"
           points={pts([0, 2, 0], [0, 3, 0], [0, 3, 1.25], [0, 2, 1.25])}
@@ -425,11 +400,9 @@ export function HeroScene({
           </text>
         )}
 
-        {/* janela */}
         <polygon className="scene-window" points={pts([1.2, 0, 1.15], [2.6, 0, 1.15], [2.6, 0, 2.05], [1.2, 0, 2.05])} />
         <line className="scene-window-bar" x1={P(1.9, 0, 1.15)[0]} y1={P(1.9, 0, 1.15)[1]} x2={P(1.9, 0, 2.05)[0]} y2={P(1.9, 0, 2.05)[1]} />
 
-        {/* caixote e mesa com o PC */}
         <Box at={[0, 4.5, 0]} size={[1.1, 1.1, 1.1]} />
         <Box at={[0, 4.75, 1.1]} size={[0.7, 0.7, 0.55]} />
         <Box at={[3.3, 0, 0]} size={[2.3, 1.15, 0.9]} />
@@ -467,9 +440,7 @@ export function HeroScene({
         <polygon className="scene-glow" points={pts([4.0, 0.46, 0.905], [5.05, 0.46, 0.905], [5.05, 1.15, 0.905], [4.0, 1.15, 0.905])} fill="url(#screen-glow)" />
         <Box at={[4.05, 0.62, 0.9]} size={[0.95, 0.32, 0.04]} />
 
-        {/* anel de respawn */}
         <ellipse ref={ringRef} className="scene-ring" cx={P(...DESK)[0]} cy={P(...DESK)[1]} rx="0" ry="0" />
-        {/* o portal de quem chega do GitHub, aberto no ar acima do PC */}
         <polygon
           ref={portalRef}
           points={pts([3.85, 1.3, 4.3], [4.95, 1.3, 4.3], [4.95, 2.4, 4.3], [3.85, 2.4, 4.3])}
@@ -478,7 +449,6 @@ export function HeroScene({
           aria-hidden
         />
 
-        {/* o jogador */}
         <g
           ref={playerRef}
           className="scene-player"
@@ -489,7 +459,6 @@ export function HeroScene({
           onClick={(e) => activate(e.currentTarget, "player")}
           onKeyDown={keyActivate("player")}
           onPointerEnter={(e) => {
-            // só mouse pausa: no toque não existe "sair de cima" e a cena ficaria parada
             if (e.pointerType !== "mouse") return;
             hoverRef.current = true;
             sync();
@@ -501,13 +470,11 @@ export function HeroScene({
         >
           <rect x="-16" y="-52" width="32" height="58" fill="transparent" />
           <ellipse className="player-shadow" cx="0" cy="0" rx="9" ry="4.5" />
-          {/* o Pedro em pixel: cabelo volumoso, sobrancelha grossa, bigode e cavanhaque, camisa preta */}
           <g ref={spriteRef} shapeRendering="crispEdges">
             <PedroParts />
           </g>
         </g>
 
-        {/* a parede de novo, por cima: liga e desliga enquanto o jogador atravessa */}
         <g ref={overlayRef} className="scene-overlay" style={{ opacity: 0 }} aria-hidden>
           <polygon className="scene-wall-l" points={pts([0, 1.6, 0], [0, 3.4, 0], [0, 3.4, H], [0, 1.6, H])} />
           <polygon points={pts([0, 2, 0], [0, 3, 0], [0, 3, 1.25], [0, 2, 1.25])} fill="url(#mt)" />

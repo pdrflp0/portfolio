@@ -11,7 +11,6 @@ const TEXT: Record<Lang, { map: string; lines: string[]; skip: string; tap: stri
   en: { map: "loading map", lines: ["geometry", "collision", "player"], skip: "skip", tap: "tap to skip" },
 };
 
-/** O mapa carregando por ~1,2 s, como nos jogos. Esc, clique ou toque pulam. */
 export function Intro({ lang }: { lang: Lang }) {
   const t = TEXT[lang];
 

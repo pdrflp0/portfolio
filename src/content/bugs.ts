@@ -9,9 +9,6 @@ export type Diagram = {
   steps: { from: number; to: number; label: L; result?: L; tone?: Tone }[];
 };
 
-/**
- * Blocos do texto. Em `p` e `list`, `crase` vira código e **asteriscos** viram destaque.
- */
 export type Block =
   | { type: "p"; text: string }
   | { type: "h2"; text: string }

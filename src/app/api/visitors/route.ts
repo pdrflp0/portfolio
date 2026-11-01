@@ -1,9 +1,8 @@
 import { connection } from "next/server";
 import { kv, kvEnabled } from "@/lib/kv";
 
-/** GET /api/visitors — visitas por país, total e quem está no site agora. */
 export async function GET() {
-  await connection(); // números ao vivo: nunca pré-renderizar no build
+  await connection();
   if (!kvEnabled) return Response.json({ enabled: false });
   try {
     const now = Date.now();
@@ -12,7 +11,6 @@ export async function GET() {
       ["GET", "v:total"],
       ["ZCOUNT", "v:live", now - 70_000, "+inf"],
     ]);
-    // HGETALL vem como [campo, valor, campo, valor…]
     const list = (countries as string[] | null) ?? [];
     const byCountry: Record<string, number> = {};
     for (let i = 0; i < list.length; i += 2) byCountry[list[i]] = Number(list[i + 1]);

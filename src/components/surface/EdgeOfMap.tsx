@@ -3,13 +3,9 @@
 import { useEffect, useRef } from "react";
 import type { NoclipOrigin } from "./Surface";
 
-const THRESHOLD = 1600; // px de "empurrão" depois do fim da página
-const SETTLE_MS = 350; // ignora a inércia logo depois de chegar no fim
+const THRESHOLD = 1600;
+const SETTLE_MS = 350;
 
-/**
- * Continuar rolando depois do fim da página é tentar sair do mapa.
- * Um indicador aparece e, se a pessoa insistir, atravessa.
- */
 export function EdgeOfMap({
   enabled,
   label,
@@ -52,7 +48,6 @@ export function EdgeOfMap({
     };
 
     const push = (amount: number) => {
-      // rolando dentro do console não conta como empurrar a parede
       if (document.getElementById("console-input")) return;
       const now = performance.now();
       if (!atBottom()) {

@@ -21,7 +21,6 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children, params }: LayoutProps<"/[lang]">) {
   const { lang: raw } = await params;
-  // idioma inválido: a página responde 404 dentro deste layout
   const lang = isLang(raw) ? raw : "pt";
 
   return (

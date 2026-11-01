@@ -7,7 +7,6 @@ import { unlock } from "@/lib/achievements";
 import { logEvent } from "@/lib/visit-log";
 import { addSpan, endSpan, startSpan, type Span } from "@/lib/tracing";
 
-/* ——— sprites (cada string é uma linha; "#" = pixel aceso) ——— */
 const BUG_A = ["..#.....#..", "...#...#...", "..#######..", ".##.###.##.", "###########", "#.#######.#", "#.#.....#.#", "...##.##..."];
 const BUG_B = ["..#.....#..", "#..#...#..#", "#.#######.#", "###.###.###", "###########", ".#########.", "..#.....#..", ".#.......#."];
 const ERR = ["###.###.###", "#...#.#.#.#", "###.#.#.#.#", "..#.#.#.#.#", "###.###.###"];
@@ -79,7 +78,6 @@ export function Arcade({ open, onClose }: { open: boolean; onClose: () => void }
      
   }, [open, mounted]);
 
-  // o jogo
   useEffect(() => {
     if (!open) return;
     const pt = ptRef.current;
@@ -206,7 +204,6 @@ export function Arcade({ open, onClose }: { open: boolean; onClose: () => void }
         return;
       }
 
-      // jogador
       const speed = 90;
       if (input.current.left) px -= speed * dt;
       if (input.current.right) px += speed * dt;
@@ -217,7 +214,6 @@ export function Arcade({ open, onClose }: { open: boolean; onClose: () => void }
         cooldown = 0.32;
       }
 
-      // formação: fica mais rápida conforme os bugs morrem
       const alive = enemies.filter((e) => e.alive);
       const interval = Math.max(0.05, (0.55 * alive.length) / enemies.length) / (1 + (wave - 1) * 0.25);
       stepAcc += dt;
@@ -232,7 +228,6 @@ export function Arcade({ open, onClose }: { open: boolean; onClose: () => void }
         } else alive.forEach((e) => (e.x += 3 * dir));
       }
 
-      // tiros inimigos ("exceptions")
       if (alive.length && Math.random() < dt * (0.9 + wave * 0.35)) {
         const shooter = alive[Math.floor(Math.random() * alive.length)];
         const below = alive.filter((e) => Math.abs(e.x - shooter.x) < 2 && e.y > shooter.y);

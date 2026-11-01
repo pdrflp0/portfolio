@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 
-/** Marca o container com data-in quando ele aparece na tela (o CSS cuida da animação). */
 export function RevealOnView({ className, children }: { className?: string; children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {

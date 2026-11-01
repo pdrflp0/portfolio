@@ -3,7 +3,6 @@ import { POSTS } from "@/content/bugs";
 import { PROJECTS } from "@/content/site";
 import { SITE_URL } from "@/lib/site-url";
 
-/** Cada página existe em pt e en; o sitemap declara os pares para os buscadores. */
 export default function sitemap(): MetadataRoute.Sitemap {
   const paths = ["", ...PROJECTS.map((p) => `/${p.id}`), "/bugs", ...POSTS.map((p) => `/bugs/${p.slug}`)];
   return paths.flatMap((path) =>
