@@ -2,7 +2,9 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import gsap from "gsap";
-import { ACHIEVEMENTS, dismissToast, useToasts, useUnlocked, type Achievement } from "@/lib/achievements";
+import { ACHIEVEMENTS, dismissToast, useToasts, useUnlocked, type Achievement, type AchievementId } from "@/lib/achievements";
+import { COSMETICS, setCosmetic, useLook } from "@/lib/cosmetics";
+import { Cosmetic, PedroParts } from "@/components/PedroSprite";
 import { useLang } from "@/lib/i18n";
 
 /** Os pixels acesos viram um único path (um elemento por ícone, não 64). */
@@ -128,6 +130,96 @@ export function AchievementsPanel() {
           {lang === "pt" ? `mostrar todas as dicas (+${hiddenCount})` : `show all hints (+${hiddenCount})`}
         </button>
       )}
+      <Wardrobe found={unlocked} />
+      {unlocked.length >= ACHIEVEMENTS.length && <Prize />}
+    </div>
+  );
+}
+
+function Wardrobe({ found }: { found: AchievementId[] }) {
+  const { lang } = useLang();
+  const look = useLook();
+  return (
+    <div className="mt-5 border-t border-obs-line pt-4">
+      <p className="text-[11px] text-obs-dim">{lang === "pt" ? "inventário do Pedro em pixel" : "pixel Pedro's inventory"}</p>
+      <ul className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
+        {COSMETICS.map((c) => {
+          const free = c.unlocked(found, ACHIEVEMENTS.length);
+          const on = look.cosmetic === c.id;
+          return (
+            <li key={c.id}>
+              <button
+                type="button"
+                disabled={!free}
+                onClick={() => setCosmetic(c.id)}
+                aria-pressed={on}
+                title={free ? c.name[lang] : `${c.name[lang]} · ${lang === "pt" ? "libera com" : "unlocks with"} ${c.rule[lang]}`}
+                className={`flex w-full flex-col items-center gap-1 border p-2 text-[10px] transition-colors ${
+                  on ? "border-[#ff4fd8] text-obs-text" : free ? "border-obs-line text-obs-dim hover:border-obs-teal" : "border-obs-line/50 text-obs-dim/50"
+                }`}
+              >
+                <svg viewBox="-11 -53 22 28" className={`h-9 w-full ${free ? "" : "opacity-30 grayscale"}`} shapeRendering="crispEdges" aria-hidden>
+                  <PedroParts />
+                  <Cosmetic id={c.id} />
+                </svg>
+                <span className="truncate">{free ? c.name[lang] : c.rule[lang]}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+const PRIZE_KEY = "pf.prize";
+
+function Prize() {
+  const { lang } = useLang();
+  const pt = lang === "pt";
+  const [code, setCode] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    let c = "";
+    try {
+      c = localStorage.getItem(PRIZE_KEY) ?? "";
+      if (!c) {
+        const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        const part = () => Array.from({ length: 4 }, () => abc[Math.floor(Math.random() * abc.length)]).join("");
+        c = `PF-${part()}-${part()}`;
+        localStorage.setItem(PRIZE_KEY, c);
+      }
+    } catch {}
+    const id = requestAnimationFrame(() => setCode(c));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  if (!code) return null;
+  return (
+    <div className="mt-5 border border-[#d9a441]/60 bg-[#d9a441]/10 p-4 text-[11px]">
+      <p className="text-[#d9a441]">{pt ? "100% · você achou todos os segredos" : "100% · you found every secret"}</p>
+      <p className="mt-2 text-obs-text">
+        {pt
+          ? "Manda esse código numa mensagem no meu LinkedIn. Quem chega até aqui merece uma conversa."
+          : "Send me this code in a LinkedIn message. Anyone who gets this far deserves a chat."}
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <code className="border border-obs-line bg-obs-0 px-3 py-1.5 text-[13px] tracking-[0.12em] text-obs-text">{code}</code>
+        <button
+          type="button"
+          onClick={() => {
+            navigator.clipboard?.writeText(code).catch(() => {});
+            setCopied(true);
+          }}
+          className="border border-obs-line px-2.5 py-1.5 text-obs-dim hover:border-obs-teal hover:text-obs-teal"
+        >
+          {copied ? (pt ? "copiado ✓" : "copied ✓") : pt ? "copiar" : "copy"}
+        </button>
+        <a href="https://www.linkedin.com/in/pdrflp/" target="_blank" rel="noreferrer" className="border border-obs-line px-2.5 py-1.5 text-obs-dim hover:border-obs-teal hover:text-obs-teal">
+          LinkedIn ↗
+        </a>
+      </div>
     </div>
   );
 }

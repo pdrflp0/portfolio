@@ -666,3 +666,11 @@ html[data-textures="0"] .hero-scene .scene-player {
   fill: #9a5640;
   opacity: 0.85;
 }
+
+.duel-worker { animation: duel-hammer 0.5s steps(2) infinite; }
+@keyframes duel-hammer { 50% { transform: translateY(-1.5px); } }
+.duel-today { animation: duel-today 1s steps(1) infinite; }
+@keyframes duel-today { 50% { opacity: 0.2; } }
+@media (prefers-reduced-motion: reduce) {
+  .duel-worker, .duel-today { animation: none; }
+}

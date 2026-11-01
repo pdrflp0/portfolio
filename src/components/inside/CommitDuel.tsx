@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PedroParts } from "@/components/PedroSprite";
+import { CountUp } from "@/components/CountUp";
 import type { Contributions, ContribDay } from "@/lib/contributions";
 import { useLang } from "@/lib/i18n";
 import { unlock } from "@/lib/achievements";
@@ -27,22 +29,84 @@ function weeks(days: ContribDay[]) {
   return out;
 }
 
-function Heatmap({ data, palette, label }: { data: Contributions; palette: string[]; label: string }) {
+function Heatmap({
+  data,
+  palette,
+  label,
+  workers = false,
+  onToday,
+  todayDone = false,
+}: {
+  data: Contributions;
+  palette: string[];
+  label: string;
+  workers?: boolean;
+  onToday?: () => void;
+  todayDone?: boolean;
+}) {
   const cols = weeks(data.days);
   const P = 11;
+  const lastX = cols.length - 1;
+  const lastY = cols[lastX].length - 1;
+  const lit = cols.flatMap((col, x) => col.map((d, y) => (d && d.level >= 2 ? [x, y] : null)).filter(Boolean) as [number, number][]);
+  const crew = workers ? [lit[Math.floor(lit.length * 0.25)], lit[Math.floor(lit.length * 0.6)], lit[lit.length - 1]].filter(Boolean) : [];
   return (
-    <svg viewBox={`0 0 ${cols.length * P} ${7 * P}`} className="block w-full" role="img" aria-label={label}>
+    <svg viewBox={`0 0 ${cols.length * P} ${7 * P}`} className="block w-full overflow-visible" role="img" aria-label={label}>
       {cols.map((col, x) =>
         col.map((d, y) =>
           d ? (
-            <rect key={`${x}-${y}`} x={x * P} y={y * P} width={P - 2} height={P - 2} rx={1.5} fill={palette[d.level] ?? palette[0]}>
+            <rect key={`${x}-${y}`} x={x * P} y={y * P} width={P - 2} height={P - 2} rx={1.5} fill={todayDone && x === lastX && y === lastY ? "#ff4fd8" : (palette[d.level] ?? palette[0])}>
               <title>{`${d.date} · ${d.count}`}</title>
             </rect>
           ) : null,
         ),
       )}
+      {crew.map(([x, y], i) => (
+        <g key={i} transform={`translate(${x * P + 4.5} ${y * P + 3})`}>
+          <g className="duel-worker" style={{ animationDelay: `${i * -0.37}s` }} shapeRendering="crispEdges">
+            <g transform="scale(0.2)">
+              <PedroParts />
+            </g>
+          </g>
+        </g>
+      ))}
+      {onToday && (
+        <rect
+          x={lastX * P - 1}
+          y={lastY * P - 1}
+          width={P}
+          height={P}
+          rx={2}
+          fill="transparent"
+          stroke="#ff4fd8"
+          strokeWidth={1}
+          className={todayDone ? undefined : "duel-today"}
+          role="button"
+          tabIndex={0}
+          aria-label="commit do dia / commit of the day"
+          onClick={onToday}
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onToday()}
+          style={{ cursor: "pointer" }}
+        />
+      )}
     </svg>
   );
+}
+
+function streakStats(days: ContribDay[]) {
+  let best = 0;
+  let run = 0;
+  let max = 0;
+  let active = 0;
+  for (const d of days) {
+    if (d.count > 0) {
+      active++;
+      run++;
+      best = Math.max(best, run);
+    } else run = 0;
+    max = Math.max(max, d.count);
+  }
+  return { active, best, max };
 }
 
 /** Skyline: cada semana vira um prédio; andar = contribuição. Prédio mais alto vence. */
@@ -74,6 +138,7 @@ export function CommitDuel() {
   const [rival, setRival] = useState<Contributions | null>(null);
   const [handle, setHandle] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [stamped, setStamped] = useState(false);
 
   useEffect(() => {
     fetch(`/api/contributions?user=${ME}`)
@@ -113,6 +178,7 @@ export function CommitDuel() {
     );
   }
 
+  const stats = streakStats(me.days);
   const diff = rival ? rival.total - me.total : 0;
   const verdict = !rival
     ? null
@@ -135,12 +201,48 @@ export function CommitDuel() {
   return (
     <div className="space-y-4 p-4 text-[11px]">
       <div>
-        <p className="mb-2 flex justify-between text-obs-dim">
-          <span>
-            <span className="text-obs-teal">@{me.login}</span> · {me.total} {pt ? "contribuições em 12 meses" : "contributions in 12 months"}
-          </span>
+        <div className="mb-3 flex flex-wrap items-end gap-x-6 gap-y-2">
+          <p className="text-obs-dim">
+            <span className="block text-[1.6rem] leading-none text-obs-text">
+              <CountUp value={me.total} locale={pt ? "pt-BR" : "en"} />
+            </span>
+            <span className="text-obs-teal">@{me.login}</span> · {pt ? "contribuições em 12 meses" : "contributions in 12 months"}
+          </p>
+          {[
+            [stats.active, pt ? "dias com commits" : "days with commits"],
+            [stats.best, pt ? "dias seguidos" : "day streak"],
+            [stats.max, pt ? "num só dia" : "in a single day"],
+          ].map(([v, l]) => (
+            <p key={String(l)} className="text-obs-dim">
+              <span className="block text-[1.1rem] leading-none text-obs-text">
+                <CountUp value={Number(v)} />
+              </span>
+              {l}
+            </p>
+          ))}
+        </div>
+        <Heatmap
+          data={me}
+          palette={LEVEL}
+          workers
+          todayDone={stamped}
+          onToday={() => {
+            if (stamped) return;
+            setStamped(true);
+            unlock("daily-commit");
+            logEvent({ kind: "event", label: "commit of the day" });
+          }}
+          label={pt ? `Contribuições de @${me.login} nos últimos 12 meses` : `@${me.login}'s contributions over the last 12 months`}
+        />
+        <p className="mt-2 text-obs-dim">
+          {stamped
+            ? pt
+              ? "commit do dia registrado ✓"
+              : "commit of the day recorded ✓"
+            : pt
+              ? "o quadradinho de hoje está piscando. faz o commit do dia?"
+              : "today's square is blinking. make the commit of the day?"}
         </p>
-        <Heatmap data={me} palette={LEVEL} label={pt ? `Contribuições de @${me.login} nos últimos 12 meses` : `@${me.login}'s contributions over the last 12 months`} />
       </div>
 
       {rival && (

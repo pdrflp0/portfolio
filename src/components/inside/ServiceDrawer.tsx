@@ -14,6 +14,11 @@ import type { GitHubSnapshot } from "@/lib/github";
 import { RelTime } from "@/components/RelTime";
 import dynamic from "next/dynamic";
 
+const DeadlockGame = dynamic(() => import("./DeadlockGame").then((m) => m.DeadlockGame), {
+  ssr: false,
+  loading: () => <div className="h-48 border border-obs-line bg-obs-0/60" aria-hidden />,
+});
+
 const ResiduoDemo = dynamic(() => import("./ResiduoDemo").then((m) => m.ResiduoDemo), {
   ssr: false,
   loading: () => <div className="h-72 border border-obs-line bg-obs-0/60" aria-hidden />,
@@ -217,6 +222,23 @@ export function ServiceDrawer({
               </p>
               <div className="mt-4">
                 <ResiduoDemo />
+              </div>
+            </section>
+          )}
+
+          {shown === "wagering" && (
+            <section id="wagering-deadlock" data-stagger className="mt-12 scroll-mt-16">
+              <h3 className="flex items-baseline gap-3 text-[12px] text-obs-teal">
+                <span className="text-obs-dim">▶</span>
+                {lang === "pt" ? "Cabo de guerra pelo lock" : "Tug of war for the lock"}
+              </h3>
+              <p className="mt-2 font-sans text-[14px] leading-relaxed text-obs-text/70">
+                {lang === "pt"
+                  ? "Duas transações, cada uma segurando a carteira que a outra precisa. Quem solta primeiro?"
+                  : "Two transactions, each holding the wallet the other one needs. Who lets go first?"}
+              </p>
+              <div className="mt-4">
+                <DeadlockGame />
               </div>
             </section>
           )}
