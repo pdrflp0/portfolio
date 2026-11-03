@@ -231,6 +231,13 @@ export function Companion({ active, rootRef, heroRef, onCommand }: Props) {
       }
     };
 
+    const onSettle = (e: TransitionEvent) => {
+      if (e.propertyName !== "transform" || !spot || sleeping || knocked || tl?.isActive()) return;
+      if (!(e.target instanceof Node) || !e.target.contains(spot)) return;
+      const t = perch(spot);
+      if (Math.abs(t.y - p.y) > 2 || Math.abs(t.x - p.x) > 2) gsap.to(p, { ...t, duration: 0.25, ease: "power1.out", onUpdate: apply });
+    };
+
     pokeRef.current = () => {
       if (knocked) return;
       wake();
@@ -288,6 +295,7 @@ export function Companion({ active, rootRef, heroRef, onCommand }: Props) {
 
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
+    root.addEventListener("transitionend", onSettle);
     const inputs = ["pointermove", "keydown", "touchstart"] as const;
     inputs.forEach((ev) => window.addEventListener(ev, wake, { passive: true }));
 
@@ -300,6 +308,7 @@ export function Companion({ active, rootRef, heroRef, onCommand }: Props) {
       cancelAnimationFrame(raf);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
+      root.removeEventListener("transitionend", onSettle);
       inputs.forEach((ev) => window.removeEventListener(ev, wake));
       window.removeEventListener("pf:tab-back", onTabBack);
       window.removeEventListener("pf:say", onSay);
