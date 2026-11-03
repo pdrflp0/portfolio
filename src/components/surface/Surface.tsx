@@ -427,12 +427,14 @@ export const Surface = forwardRef<HTMLDivElement, Props>(function Surface({ onNo
       </main>
 
       <footer className="bg-ink text-paper/60">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 border-t border-paper/10 px-5 py-6 font-mono text-[11px] sm:px-8">
-          <span>© Pedro Felipe de Oliveira · {t.footer}</span>
-          <span className="flex items-center gap-5">
-            <SecretsCounter onOpen={onSecrets} />
-            <CheatsToggle onActivate={(o) => onNoclip(o, "sv_cheats")} />
-          </span>
+        <div className="mx-auto max-w-6xl px-5 sm:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-paper/10 py-6 font-mono text-[11px]">
+            <span>© Pedro Felipe de Oliveira · {t.footer}</span>
+            <span className="flex items-center gap-5">
+              <SecretsCounter onOpen={onSecrets} />
+              <CheatsToggle onActivate={(o) => onNoclip(o, "sv_cheats")} />
+            </span>
+          </div>
         </div>
       </footer>
 

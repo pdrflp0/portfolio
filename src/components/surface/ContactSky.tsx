@@ -94,9 +94,9 @@ export function ContactSky() {
         />
       )}
       {clock && (
-        <span className="absolute bottom-4 right-5 font-mono text-[11px] text-paper/40 sm:right-8">
+        <div className="absolute inset-x-0 bottom-4 mx-auto max-w-6xl px-5 text-right font-mono text-[11px] text-paper/40 sm:px-8">
           {pt ? `em Fortaleza agora: ${clock}` : `now in Fortaleza: ${clock}`}
-        </span>
+        </div>
       )}
       {drops.map((d) => (
         <button
