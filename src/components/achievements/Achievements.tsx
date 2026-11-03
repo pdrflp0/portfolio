@@ -138,7 +138,7 @@ function Wardrobe({ found }: { found: AchievementId[] }) {
   return (
     <div className="mt-5 border-t border-obs-line pt-4">
       <p className="text-[11px] text-obs-dim">{lang === "pt" ? "inventário do Pedro em pixel" : "pixel Pedro's inventory"}</p>
-      <ul className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
+      <ul className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6 xl:grid-cols-3">
         {COSMETICS.map((c) => {
           const free = c.unlocked(found, ACHIEVEMENTS.length);
           const on = look.cosmetic === c.id;
@@ -150,7 +150,7 @@ function Wardrobe({ found }: { found: AchievementId[] }) {
                 onClick={() => setCosmetic(c.id)}
                 aria-pressed={on}
                 title={free ? c.name[lang] : `${c.name[lang]} · ${lang === "pt" ? "libera com" : "unlocks with"} ${c.rule[lang]}`}
-                className={`flex w-full flex-col items-center gap-1 border p-2 text-[10px] transition-colors ${
+                className={`flex h-full w-full flex-col items-center gap-1 border p-2 text-[10px] transition-colors ${
                   on ? "border-[#ff4fd8] text-obs-text" : free ? "border-obs-line text-obs-dim hover:border-obs-teal" : "border-obs-line/50 text-obs-dim/50"
                 }`}
               >
@@ -158,7 +158,7 @@ function Wardrobe({ found }: { found: AchievementId[] }) {
                   <PedroParts />
                   <Cosmetic id={c.id} />
                 </svg>
-                <span className="truncate">{free ? c.name[lang] : c.rule[lang]}</span>
+                <span className="w-full break-words text-center leading-tight">{free ? c.name[lang] : c.rule[lang]}</span>
               </button>
             </li>
           );
